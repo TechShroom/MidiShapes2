@@ -1,7 +1,7 @@
 def subdeps = [
     "UDAPI": [],
     "UDCore": [],
-    "UDGraphics": [],
+    "Blitter": [],
     "UDKeyboard": [],
     "UDMouse": [],
     "UDWindows": []
