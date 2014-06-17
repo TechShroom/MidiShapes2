@@ -1,11 +1,12 @@
-def subdeps = [
-    "UDAPI": [],
-    "UDCore": [],
-    "Blitter": [],
-    "UDKeyboard": [],
-    "UDMouse": [],
-    "UDWindows": []
-]
+def subdeps = [:]
+
+File[] dirList(String dir) {
+    file(dir).listFiles({file -> file.isDirectory() && !file.getName().startsWith(".")} as FileFilter).sort()
+}
+
+dirList(".").each{
+    subdeps[it.getName()] = []
+}
 
 subdeps.entrySet().each{
     if (it.key != "UDCore")
