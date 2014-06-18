@@ -17,6 +17,9 @@ subprojects {
     println "=== Configuring $name ==="
     apply plugin: 'java'
     apply plugin: 'eclipse'
+    
+    // eclipse bug workaround
+    task reeclipse(dependsOn: ['cleanEclipseClasspath', 'eclipse'])
 
     repositories {
         mavenCentral()
