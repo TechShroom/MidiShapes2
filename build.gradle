@@ -36,3 +36,27 @@ subprojects {
     }
     println '=== Complete ==='
 }
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    
+    
+    dependencies {
+        classpath 'org.ajoberstar:gradle-git:0.9.0'
+    }
+}
+
+import org.ajoberstar.grgit.*
+
+ext.repo = Grgit.open(project.file('.'))
+
+version = "1.0.0-${repo.head().abbreviatedId}"
+
+task tagRelease << {
+  repo.tag.add {
+    name = version
+    message = "Release of ${version}"
+  }
+}
