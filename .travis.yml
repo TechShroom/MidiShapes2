@@ -2,4 +2,4 @@ language: java
 jdk:
   - openjdk7
   - oraclejdk7
-  - openjdk6
+  # - openjdk6 # check if we need this at some point

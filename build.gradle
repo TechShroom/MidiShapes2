@@ -18,6 +18,10 @@ subdeps.entrySet().each{
 subprojects {
     println "=== Configuring $name ==="
     apply plugin: 'java'
+    
+    // java 6 compat
+    sourceCompatibility = '1.6'
+    
     apply plugin: 'eclipse'
     
     // eclipse bug workaround
@@ -59,7 +63,7 @@ task doBuild << {
     }
 }
 
-task release {
+task release(dependsOn: 'doBuild') {
     def client = new GitHubClient();
     client.setOAuth2Token oauth
 }
