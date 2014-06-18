@@ -1,3 +1,5 @@
+apply plugin: 'grgit-release'
+
 version = "1.0.0"
 def subdeps = [:]
 
@@ -61,8 +63,6 @@ task doBuild << {
         build.execute()
     }
 }
-
-apply plugin: 'grgit-release'
 
 import org.ajoberstar.grgit.*
 
