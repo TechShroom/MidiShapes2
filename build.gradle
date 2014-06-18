@@ -51,11 +51,15 @@ buildscript {
     }
 }
 
+import org.ajoberstar.grgit.*
+def repo = Grgit.open(project.file('.'))
+
 task tagVersion << {
     repo.tag.add {
         name = version
         message = "Release of ${version}"
     }
+    println "Added tag for $version"
 }
 
 task doBuild << {
@@ -64,10 +68,8 @@ task doBuild << {
     }
 }
 
-import org.ajoberstar.grgit.*
-
 release {
-  grgit = Grgit.open(project.file('.'))
+  grgit = repo
   releaseTasks = ['doBuild', 'tagVersion']
 
   version {
