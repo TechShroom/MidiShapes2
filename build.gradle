@@ -1,5 +1,4 @@
-apply plugin: 'grgit-release'
-
+def oauth = ""
 version = "1.0.0"
 def subdeps = [:]
 
@@ -47,22 +46,12 @@ buildscript {
     
     
     dependencies {
-        classpath 'org.ajoberstar:gradle-git:0.9.0'
+        classpath 'org.eclipse.mylyn.github:org.eclipse.egit.github.core:2.1.5'
     }
 }
 
-import org.ajoberstar.grgit.*
-def repo = Grgit.open(project.file('.'))
-
-// task tagVersion << {
-    repo.tag.add {
-        name = version
-        message = "Release of ${version}"
-    }
-    println "Added tag for $version"
-// }
-
-// prepare.dependsOn tagVersion
+import org.eclipse.egit.github.core.*
+import org.eclipse.egit.github.core.client.*
 
 task doBuild << {
     subprojects {
@@ -70,16 +59,7 @@ task doBuild << {
     }
 }
 
-release {
-    grgit = repo
-    releaseTasks = ['doBuild']
-
-    version {
-      untaggedStages = new TreeSet(['light'])
-      taggedStages = new TreeSet(['repellent', 'dark'])
-    }
-}
-
-prepare << {
-    assert release.stage != "final"
+task release {
+    def client = new GitHubClient();
+    client.setOAuth2Token oauth
 }
