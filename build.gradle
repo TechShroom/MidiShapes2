@@ -48,15 +48,26 @@ buildscript {
     }
 }
 
+task doBuild << {
+    subprojects {
+        build.execute()
+    }
+}
+
+apply plugin: 'grgit-release'
+
 import org.ajoberstar.grgit.*
 
-ext.repo = Grgit.open(project.file('.'))
+release {
+  grgit = Grgit.open(project.file('.'))
+  releaseTasks = ['doBuild']
 
-version = "1.0.0-${repo.head().abbreviatedId}"
-
-task tagRelease << {
-  repo.tag.add {
-    name = version
-    message = "Release of ${version}"
+  version {
+    untaggedStages = new TreeSet(['light'])
+    taggedStages = new TreeSet(['repellent', 'dark'])
   }
+}
+
+prepare << {
+    assert release.stage != "final"
 }
