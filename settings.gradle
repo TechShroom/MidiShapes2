@@ -1,1 +1,7 @@
-include "UDAPI", "UDCore", "Blitter", "UDKeyboard", "UDMouse", "UDWindows"
+File[] dirList(String dir) {
+    file(dir).listFiles({file -> file.isDirectory() && !file.getName().startsWith(".")} as FileFilter).sort()
+}
+
+dirList(".").each{
+    include it.getName()
+}
