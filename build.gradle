@@ -62,6 +62,8 @@ task tagVersion << {
     println "Added tag for $version"
 }
 
+prepare.dependsOn tagVersion
+
 task doBuild << {
     subprojects {
         build.execute()
@@ -69,13 +71,13 @@ task doBuild << {
 }
 
 release {
-  grgit = repo
-  releaseTasks = ['doBuild', 'tagVersion']
+    grgit = repo
+    releaseTasks = ['doBuild']
 
-  version {
-    untaggedStages = new TreeSet(['light'])
-    taggedStages = new TreeSet(['repellent', 'dark'])
-  }
+    version {
+      untaggedStages = new TreeSet(['light'])
+      taggedStages = new TreeSet(['repellent', 'dark'])
+    }
 }
 
 prepare << {
