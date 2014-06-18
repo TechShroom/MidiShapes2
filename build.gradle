@@ -49,6 +49,13 @@ buildscript {
     }
 }
 
+task tagVersion << {
+    repo.tag.add {
+        name = version
+        message = "Release of ${version}"
+    }
+}
+
 task doBuild << {
     subprojects {
         build.execute()
@@ -61,7 +68,7 @@ import org.ajoberstar.grgit.*
 
 release {
   grgit = Grgit.open(project.file('.'))
-  releaseTasks = ['doBuild']
+  releaseTasks = ['doBuild', 'tagVersion']
 
   version {
     untaggedStages = new TreeSet(['light'])
