@@ -3,4 +3,5 @@ jdk:
   - openjdk7
   - oraclejdk7
   # - openjdk6 # check if we need this at some point
-script: ./pre-gradle.sh
+install: ./pre-gradle.sh
+script: ./do-gradle.sh
