@@ -1,2 +1,20 @@
 println "Configuring $name's GitHub manager..."
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    
+    
+    dependencies {
+        classpath 'com.jcabi:jcabi-github:0.8.1'
+    }
+}
+
+
+
+task release(dependsOn: 'doBuild') {
+    
+}
+
 println "Complete."
