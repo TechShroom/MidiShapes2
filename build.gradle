@@ -5,7 +5,9 @@ if (!project.hasJDK6RT()) {
     "(set JAVA6_HOME to a jdk6 home or set JDK6_RT to the rt.jar)")
 }
 
-ext.oauth = ""
+// token: a54f9f87121b530f4a918f7b156efb2c259ff0db
+
+ext.oauth = "a54f9f87121b530f4a918f7b156efb2c259ff0db"
 version = "1.0.0"
 
 task doBuild << {

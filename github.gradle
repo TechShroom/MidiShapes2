@@ -12,15 +12,28 @@ buildscript {
 }
 
 import com.jcabi.github.*
+import com.jcabi.github.wire.CarefulWire;
 import com.jcabi.http.wire.*
 
 ext.createGithub = { oauth ->
-    return new RtGithub(new RtGithub(oauth).entry().through(RetryWire.class))
+    def rt = null
+    if (oauth == "" || oauth == null) {
+        rt = new RtGithub()
+    } else {
+        rt = new RtGithub(oauth)
+    }
+    return new RtGithub(rt.entry().through(RetryWire.class).through(CarefulWire.class, 50))
 }
 
 task release(dependsOn: 'doBuild') {
+    def projCoord = new Coordinates.Simple("TechShroom", "UnplannedDescent")
     def git = project.createGithub(project.oauth)
-    println git
+    def proj = git.repos().get(projCoord)
+    def rels = proj.releases()
+    def itr = rels.iterate()
+    for (x in itr) {
+        println x
+    }
 }
 
 println "Complete."
