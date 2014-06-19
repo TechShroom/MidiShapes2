@@ -11,10 +11,16 @@ buildscript {
     }
 }
 
+import com.jcabi.github.*
+import com.jcabi.http.wire.*
 
+ext.createGithub = { oauth ->
+    return new RtGithub(new RtGithub(oauth).entry().through(RetryWire.class))
+}
 
 task release(dependsOn: 'doBuild') {
-    
+    def git = project.createGithub(project.oauth)
+    println git
 }
 
 println "Complete."
