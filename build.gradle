@@ -1,28 +1,17 @@
-boolean hasJDK6RT() {
-    return getJDK6RT() != null
-}
+apply from: 'util.gradle', to: project
 
-String getJDK6RT() {
-    if (hasProperty("JAVA6_HOME")) {
-        return property("JAVA6_HOME") + "/jre/lib/rt.jar"
-    }
-    if (hasProperty("JAVA_HOME") && System.getProperty("java.version").startsWith("1.6")) {
-        return property("JAVA_HOME") + "/jre/lib/rt.jar"
-    }
-    if (hasProperty("JDK6_RT")) {
-        return property("JDK6_RT")
-    }
-    return null
-}
-
-if (!hasJDK6RT()) {
+if (!project.hasJDK6RT()) {
     throw new RuntimeException("Need to know where your JDK6 rt.jar is! " +
     "(set JAVA6_HOME to a jdk6 home or set JDK6_RT to the rt.jar)")
 }
 
 def oauth = ""
 version = "1.0.0"
+
+apply from: 'github.gradle', to: project
+
 def subdeps = [:]
+def submvn = [:]
 
 File[] dirList(String dir) {
     file(dir).listFiles({file -> file.isDirectory() && !file.getName().startsWith(".")} as FileFilter).sort()
@@ -30,12 +19,15 @@ File[] dirList(String dir) {
 
 dirList(".").each{
     subdeps[it.getName()] = []
+    submvn[it.getName()] = []
 }
 
 subdeps.entrySet().each{
     if (it.key != "UDCore")
         it.value.add("UDCore")
 }
+
+submvn["UDCore"].add("net.sf.sociaal:lwjgl:3.+")
 
 subprojects {
     println "=== Configuring $name ==="
@@ -55,7 +47,9 @@ subprojects {
     }
 
     dependencies {
-        compile group: 'net.sf.sociaal', name: 'lwjgl', version: '3.+'
+        submvn[name].each{
+            compile "$it"
+        }
 
         subdeps[name].each{
             compile project(":$it")
@@ -73,6 +67,7 @@ buildscript {
     
     
     dependencies {
+        classpath 'com.jcabi:jcabi-github:0.8.1'
     }
 }
 

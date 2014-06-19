@@ -1,0 +1,41 @@
+println "Adding utility methods to $project.name..."
+
+// return true if there is a property `prop` from Gradle, Java system properties, or environment, in that order.
+ext._hasProperty = { prop ->
+    def res = _property(prop)
+    return res != null && res != ""
+}
+
+// get property from Gradle, Java system properties, or environment, in that order.
+ext._property = { prop ->
+    if (hasProperty(prop))
+        return property(prop)
+    def res = System.getProperty(prop, null)
+    if (res)
+        return res
+    res = System.getenv(prop)
+    if (res)
+        return res
+    return null
+}
+
+// true if we have a jdk6 rt.jar
+ext.hasJDK6RT = { ->
+    return project.getJDK6RT() != null
+}
+
+// get the jdk6 rt.jar; or null if there is none
+ext.getJDK6RT = { ->
+    if (_hasProperty("JAVA6_HOME")) {
+        return _property("JAVA6_HOME") + "/jre/lib/rt.jar"
+    }
+    if (_hasProperty("JAVA_HOME") && System.getProperty("java.version").startsWith("1.6")) {
+        return _property("JAVA_HOME") + "/jre/lib/rt.jar"
+    }
+    if (_hasProperty("JDK6_RT")) {
+        return _property("JDK6_RT")
+    }
+    return null
+}
+
+println "Complete."
