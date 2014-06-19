@@ -8,8 +8,8 @@ ext._hasProperty = { prop ->
 
 // get property from Gradle, Java system properties, or environment, in that order.
 ext._property = { prop ->
-    if (hasProperty(prop))
-        return property(prop)
+    if (project.hasProperty(prop))
+        return project.property(prop)
     def res = System.getProperty(prop, null)
     if (res)
         return res
