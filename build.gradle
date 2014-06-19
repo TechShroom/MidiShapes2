@@ -1,17 +1,8 @@
 boolean hasJDK6RT() {
-    if (hasProperty("JAVA6_HOME")) {
-        return true
-    }
-    if (hasProperty("JAVA_HOME") && System.getProperty("java.version").startsWith("1.6")) {
-        return true
-    }
-    if (hasProperty("JDK6_RT")) {
-        return true
-    }
-    return false
+    return getJDK6RT() != null
 }
 
-String hasJDK6RT() {
+String getJDK6RT() {
     if (hasProperty("JAVA6_HOME")) {
         return property("JAVA6_HOME") + "/jre/lib/rt.jar"
     }

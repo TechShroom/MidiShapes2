@@ -4,4 +4,5 @@ jdk:
   - oraclejdk7
   # - openjdk6 # check if we need this at some point
 before_install:
-  - echo "JAVA6_HOME=$(jdk_switcher home jdk6)" > gradle.properties
+  - echo "JAVA6_HOME=$(jdk_switcher home jdk6)" >> gradle.properties
+  - cat gradle.properties
