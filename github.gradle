@@ -25,15 +25,48 @@ ext.createGithub = { oauth ->
     return new RtGithub(rt.entry().through(RetryWire.class).through(CarefulWire.class, 50))
 }
 
+ext.getLastRelSmart = { repo ->
+    def lastll = repo?.releases()?.iterate()?.iterator()?.toList()
+    def last = null
+    if (lastll.size() != 0) {
+        last = lastll.last()
+    }
+    return last == null ? null : new Release.Smart(last)
+}
+
+import java.util.regex.Matcher
+import java.util.regex.Pattern
+
+// note: the following requires a tag version formatted as follows:
+// "v$major.$minor.$patch"
+// ('v' + major + '.' + minor + '.' + patch)
+// and a project version formatted as follows:
+// "$major.$minor.$patch"
+// (major + '.' + minor + '.' + patch)
+
+ext.versionNext = { relsm ->
+    def pver = project.version
+    def pmat = pver =~ /(\d)\.(\d)\.(\d)/
+    if (!pmat.find()) {
+        throw new IllegalArgumentException("project version in wrong format")
+    }
+    def lver = relsm.name()
+    def mat = lver =~ /v\.(\d)\.(\d)\.(\d)/
+    if (mat.find()) {
+    
+    } else {
+        // assume version is right
+        println "Assuming version v$version is correct!"
+    }
+}
+
 task release(dependsOn: 'doBuild') {
     def projCoord = new Coordinates.Simple("TechShroom", "UnplannedDescent")
     def git = project.createGithub(project.oauth)
     def proj = git.repos().get(projCoord)
-    def rels = proj.releases()
-    def itr = rels.iterate()
-    for (x in itr) {
-        println x
-    }
+    def rs = project.getLastRelSmart(proj)
+    def ver = ''
+    
 }
 
 println "Complete."

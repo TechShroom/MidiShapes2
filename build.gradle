@@ -8,13 +8,9 @@ if (!project.hasJDK6RT()) {
 // token: a54f9f87121b530f4a918f7b156efb2c259ff0db
 
 ext.oauth = "a54f9f87121b530f4a918f7b156efb2c259ff0db"
-version = "1.0.0"
+version = ext.version = "1.0.0"
 
-task doBuild << {
-    subprojects {
-        build.execute()
-    }
-}
+task doBuild {}
 
 apply from: 'github.gradle', to: project
 
@@ -39,7 +35,15 @@ submvn["UDCore"].add("net.sf.sociaal:lwjgl:3.+")
 
 subprojects {
     println "=== Configuring $name ==="
+    
     apply plugin: 'java'
+    def root = getParent()
+    root.doBuild.dependsOn(":$name:build")
+    version = root.version
+    
+    jar {
+        version = root.version
+    }
 
     // java 6 compat
     compileJava.sourceCompatibility = '1.6'
