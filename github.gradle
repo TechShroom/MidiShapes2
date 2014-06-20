@@ -77,6 +77,7 @@ ext.versionNext = { relsm ->
         // assume version is right
         println "Assuming version v$pver is correct!"
     }
+    return pver
 }
 
 task release(dependsOn: 'doBuild') {
@@ -85,6 +86,7 @@ task release(dependsOn: 'doBuild') {
     def proj = git.repos().get(projCoord)
     def rs = project.getLastRelSmart(proj)
     def ver = project.versionNext()
+    
     
 }
 
