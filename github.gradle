@@ -46,7 +46,7 @@ import java.util.regex.Pattern
 
 ext.versionNext = { relsm ->
     def pver = project.version
-    def mat = pver =~ /(\d)\.(\d)\.(\d)/
+    def mat = pver =~ /(\d)\.(\d)\.(\d).+/
     if (!mat) {
         throw new IllegalArgumentException("project version ($pver) in wrong format")
     }
@@ -87,7 +87,10 @@ task release(dependsOn: 'doBuild') {
     def rs = project.getLastRelSmart(proj)
     def ver = project.versionNext()
     
-    
+    if (ver == rs?.name()) {
+        println "Version unchanged."
+        return
+    }
 }
 
 println "Complete."
