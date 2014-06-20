@@ -46,17 +46,36 @@ import java.util.regex.Pattern
 
 ext.versionNext = { relsm ->
     def pver = project.version
-    def pmat = pver =~ /(\d)\.(\d)\.(\d)/
-    if (!pmat.find()) {
-        throw new IllegalArgumentException("project version in wrong format")
+    def mat = pver =~ /(\d)\.(\d)\.(\d)/
+    if (!mat) {
+        throw new IllegalArgumentException("project version ($pver) in wrong format")
     }
-    def lver = relsm.name()
-    def mat = lver =~ /v\.(\d)\.(\d)\.(\d)/
-    if (mat.find()) {
     
+    println "Comparing $pver..."
+    
+    def pmajor = mat.group(1)
+    def pminor = mat.group(2)
+    def ppatch = mat.group(3)
+    
+    def lver = relsm?.name()
+    mat = lver =~ /v\.(\d)\.(\d)\.(\d)/
+    if (mat) {
+        def major = mat.group(1)
+        def minor = mat.group(2)
+        def patch = mat.group(3)
+        if (major > pmajor - 1) {
+            throw new RuntimeException("Too large of a jump: $major -> $pmajor")
+        }
+        if (minor > pminor - 1) {
+            throw new RuntimeException("Too large of a jump: $minor -> $pminor")
+        }
+        if (patch > ppatch - 1) {
+            throw new RuntimeException("Too large of a jump: $patch -> $ppatch")
+        }
+        println "Going from $lver -> $pver"
     } else {
         // assume version is right
-        println "Assuming version v$version is correct!"
+        println "Assuming version v$pver is correct!"
     }
 }
 
@@ -65,7 +84,7 @@ task release(dependsOn: 'doBuild') {
     def git = project.createGithub(project.oauth)
     def proj = git.repos().get(projCoord)
     def rs = project.getLastRelSmart(proj)
-    def ver = ''
+    def ver = project.versionNext()
     
 }
 
