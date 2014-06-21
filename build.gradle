@@ -7,7 +7,7 @@ if (!project.hasJDK6RT()) {
 
 // token: a54f9f87121b530f4a918f7b156efb2c259ff0db
 
-ext.oauth = "a54f9f87121b530f4a918f7b156efb2c259ff0db"
+// ext.oauth = "a54f9f87121b530f4a918f7b156efb2c259ff0db"
 version = ext.version = "1.0.0"
 
 task doBuild {}

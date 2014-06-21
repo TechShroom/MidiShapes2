@@ -1,3 +1,5 @@
+apply from: 'util.gradle', to: project
+
 println "Configuring $name's GitHub manager..."
 
 buildscript {
@@ -12,21 +14,43 @@ buildscript {
 }
 
 import com.jcabi.github.*
-import com.jcabi.github.wire.CarefulWire;
+import com.jcabi.github.wire.CarefulWire
 import com.jcabi.http.wire.*
+import javax.ws.rs.core.HttpHeaders
+import org.codehaus.groovy.runtime.EncodingGroovyMethods
 
-ext.createGithub = { oauth ->
+ext.createGithub = { oauth, user, pass ->
     def rt = null
+    def method = 0 // 0 = none, 1 = user/pass, 2 = oauth
     if (oauth == "" || oauth == null) {
-        rt = new RtGithub()
+        if (user == "" || user == null) {
+            rt = new RtGithub()
+            method = 0
+        } else {
+            rt = new RtGithub(user, pass)
+            method = 1
+        }
     } else {
         rt = new RtGithub(oauth)
+        method = 2
     }
-    return new RtGithub(rt.entry().through(RetryWire.class).through(CarefulWire.class, 50))
+    def rt_req = rt.entry().through(RetryWire.class).through(CarefulWire.class, 50)
+    
+    if (method == 1) {
+        // patch auth header
+        rt_req = rt_req.header(
+            HttpHeaders.AUTHORIZATION,
+            String.format("Basic %s", EncodingGroovyMethods.encodeBase64("$user:$pass".getBytes()))
+        )
+    }
+    
+    ext.githubAuthMethod = method
+    
+    return new RtGithub(rt_req)
 }
 
-ext.getLastRelSmart = { repo ->
-    def lastll = repo?.releases()?.iterate()?.iterator()?.toList()
+ext.getLastRelSmart = { releases ->
+    def lastll = releases?.iterate()?.iterator()?.toList()
     def last = null
     if (lastll.size() != 0) {
         last = lastll.last()
@@ -51,25 +75,29 @@ ext.versionNext = { relsm ->
         throw new IllegalArgumentException("project version ($pver) in wrong format")
     }
     
-    println "Comparing $pver..."
+    print "Comparing $pver..."
     
     def pmajor = mat.group(1)
     def pminor = mat.group(2)
     def ppatch = mat.group(3)
     
-    def lver = relsm?.name()
-    mat = lver =~ /v\.(\d)\.(\d)\.(\d)/
+    def lver = relsm?.tag()
+    if (lver) {
+        print "to $lver..."
+    }
+    println ""
+    mat = lver =~ /v(\d)\.(\d)\.(\d)/
     if (mat) {
         def major = mat.group(1)
         def minor = mat.group(2)
         def patch = mat.group(3)
-        if (major > pmajor - 1) {
+        if (pmajor > major + 1) {
             throw new RuntimeException("Too large of a jump: $major -> $pmajor")
         }
-        if (minor > pminor - 1) {
+        if (pminor > minor + 1) {
             throw new RuntimeException("Too large of a jump: $minor -> $pminor")
         }
-        if (patch > ppatch - 1) {
+        if (ppatch > patch + 1) {
             throw new RuntimeException("Too large of a jump: $patch -> $ppatch")
         }
         println "Going from $lver -> $pver"
@@ -80,16 +108,30 @@ ext.versionNext = { relsm ->
     return pver
 }
 
-task release(dependsOn: 'doBuild') {
+task release(dependsOn: 'doBuild') << {
     def projCoord = new Coordinates.Simple("TechShroom", "UnplannedDescent")
-    def git = project.createGithub(project.oauth)
+    def git = project.createGithub(
+        project._property("oauth"),
+        project._property("user"),
+        project._property("password")
+    )
+    if (project.githubAuthMethod == 0) {
+        // no auth, no upload!
+        throw new RuntimeException("No authorization for upload!")
+    }
     def proj = git.repos().get(projCoord)
-    def rs = project.getLastRelSmart(proj)
-    def ver = project.versionNext()
+    def releases = proj.releases()
+    def rs = project.getLastRelSmart(releases)
+    def ver = project.versionNext(rs)
     
-    if (ver == rs?.name()) {
+    if ("v$ver" == rs?.tag()) {
         println "Version unchanged."
         return
+    }
+    
+    def nrs = new Release.Smart(releases.create("v$ver"))
+    if (_hasProperty("prerelease")) {
+        nrs.prerelease(_property("prerelease").toBoolean())
     }
 }
 
