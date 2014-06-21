@@ -49,10 +49,21 @@ ext.createGithub = { oauth, user, pass ->
     return new RtGithub(rt_req)
 }
 
+import javax.json.*
+
+ext.safeName = { release ->
+    def json = new SmartJson(release)
+    def name = json.value('name', JsonValue.class)
+    if (name == JsonValue.NULL) {
+        return null
+    }
+    return name.toString()
+}
+
 ext.getLastRelSmart = { releases ->
     def lastll = releases?.iterate()?.iterator()?.toList()
     def last = null
-    if (lastll.size() != 0) {
+    if (lastll?.size() != 0) {
         last = lastll.last()
     }
     return last == null ? null : new Release.Smart(last)
@@ -108,19 +119,51 @@ ext.versionNext = { relsm ->
     return pver
 }
 
-task release(dependsOn: 'doBuild') << {
-    def projCoord = new Coordinates.Simple("TechShroom", "UnplannedDescent")
-    def git = project.createGithub(
+ext.assetArchiveDir = ".build/lib-base"
+ext.assetArchiveDestDir = ".build/lib-all"
+ext.aName = 'upload-' + version + '.zip'
+
+task _zipassets(type: Zip) << {
+    println "$project"
+    from project.assetArchiveDir
+    archiveName = project.aName
+    destinationDir = project.assetArchiveDestDir
+}
+
+ext.createAssetBytes = {
+    subprojects {
+        moveAssets()
+    }
+    project._zipassets.execute()
+    return file(assetArchiveDestDir + '/' + project.aName).getBytes()
+}
+
+subprojects {
+    ext.moveAssets = {
+        copy {
+            from 'build/libs'
+            into project.getParent().file(project.getParent().assetArchiveDir)
+        }
+    }
+}
+
+task setupGithub() << {
+    def _ = project.ext
+    _.projCoord = new Coordinates.Simple("TechShroom", "UnplannedDescent")
+    _.git = project.createGithub(
         project._property("oauth"),
         project._property("user"),
         project._property("password")
     )
+    _.proj = git.repos().get(projCoord)
+}
+
+task release(dependsOn: ['setupGithub', 'doBuild']) << {
     if (project.githubAuthMethod == 0) {
         // no auth, no upload!
         throw new RuntimeException("No authorization for upload!")
     }
-    def proj = git.repos().get(projCoord)
-    def releases = proj.releases()
+    def releases = project.proj.releases()
     def rs = project.getLastRelSmart(releases)
     def ver = project.versionNext(rs)
     
@@ -132,6 +175,71 @@ task release(dependsOn: 'doBuild') << {
     def nrs = new Release.Smart(releases.create("v$ver"))
     if (_hasProperty("prerelease")) {
         nrs.prerelease(_property("prerelease").toBoolean())
+    }
+    if (_hasProperty("name")) {
+        nrs.name(_property("name"))
+    }
+    
+    def bytes = project.createAssetBytes()
+    
+    def name = _property("name")
+    
+    if (name == "" || name == null) {
+        name = "UnplannedDescent-all-" + nrs.tag()
+    }
+    
+    nrs.assets().upload(bytes, "application/java-archive", "$name.jar")
+}
+
+import com.jcabi.http.response.JsonResponse;
+import com.jcabi.http.response.RestResponse;
+import java.net.HttpURLConnection;
+
+task clearRelease(dependsOn: 'setupGithub') << {
+    def releases = project.proj.releases()
+    
+    def rem = null
+    
+    if (_hasProperty("remove")) {
+        def ver = _property("remove")
+        def itr = releases.iterate()
+        for (item in itr) {
+            if (new Release.Smart(item).tag() == ver || project.safeName(item) == ver) {
+                rem = item
+                break
+            }
+        }
+    } else {
+        def last = project.getLastRelSmart(releases)
+        if (!last) {
+            println "No releases!"
+            return
+        }
+        rem = last
+    }
+    if (rem) {
+        def tag = rem.tag()
+        def req = project.git.entry()
+        def repo = project.proj
+        def rgit = new RtGit(req, repo)
+        def rtags = rgit.tags()
+        def tagjson = req.uri().path("/repos").path(repo.coordinates().user())
+            .path(repo.coordinates().repo()).path("/tags").back().fetch()
+            .as(RestResponse.class)
+            .assertStatus(HttpURLConnection.HTTP_OK)
+            .as(JsonResponse.class)
+            .json().readArray()
+        for (xtag in tagjson) {
+            def tagName = xtag.getString("name")
+            if (tagName == tag) {
+                req.method(com.jcabi.http.Request.DELETE)
+                .uri().path("/repos").path(repo.coordinates().user())
+                .path(repo.coordinates().repo()).path("/git/refs/tags/$tagName").back().fetch()
+                .as(RestResponse.class)
+                .assertStatus(HttpURLConnection.HTTP_NO_CONTENT);
+            }
+        }
+        releases.remove(rem.number())
     }
 }
 
