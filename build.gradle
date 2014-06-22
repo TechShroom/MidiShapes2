@@ -14,6 +14,10 @@ task doBuild {}
 
 apply from: 'github.gradle', to: project
 
+if (_hasProperty("TRAVISCI") && _property("TRAVISCI").toBoolean()) {
+    apply from: 'travis.gradle', to: project
+}
+
 def subdeps = [:]
 def submvn = [:]
 
