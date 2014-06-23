@@ -54,17 +54,14 @@ subprojects {
     blist.add(project.build)
 }
 
-task _zipassets(type: Zip, dependsOn: blist) {
+task _zipassets(type: Zip, dependsOn: [mvalist, blist]) {
     println "$project"
     from project.assetArchiveDir
     archiveName = project.aName
     destinationDir = project.assetArchiveDestDir
 }
 
-println _zipassets.inputs
-println _zipassets.outputs
-
-task createAssetBytes(dependsOn: [mvalist, '_zipassets']) << {
+task createAssetBytes(dependsOn: ['_zipassets']) << {
     return file(assetArchiveDestDir + '/' + project.aName).getBytes()
 }
 
