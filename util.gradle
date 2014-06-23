@@ -40,7 +40,7 @@ ext.getJDK6RT = { ->
 
 ext.assetArchiveDir = file(".build/lib-base")
 ext.assetArchiveDestDir = file(".build/lib-all")
-ext.aName = 'upload-' + version + '.zip'
+ext.aName = 'upload-' + project.version + '.zip'
 
 def mvalist = []
 def blist = []
