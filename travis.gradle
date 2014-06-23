@@ -1,1 +1,26 @@
 println "Travis CI mode enabled!"
+
+task travisRelease(dependsOn: ['_zipassets']) << {
+
+    def commit_sha = ""
+    
+    def prestd = new ByteArrayOutputStream()
+
+    // fetch commit sha for name
+    exec {
+        commandLine 'git', 'log', '-n', '1', '--pretty=format:"%H"'
+
+        standardOutput = prestd
+    }
+
+    commit_sha = prestd.toString()
+
+    exec {
+        executable 'curl'
+
+        def FTP_USER = _property("FTP_USER")
+        def FTP_PASSWORD = _property("FTP_PASSWORD")
+
+        args '--ftp-create-dirs', '-T', "$project.assetArchiveDestDir/$project.aName", '-u', "$FTP_USER:$FTP_PASSWORD", 'ftp://475.076.myftpupload.com/non-wp/uploads/travis-ci/commital/' + "UD-$commit_sha-all.zip"
+    }
+}

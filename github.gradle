@@ -1,4 +1,6 @@
-apply from: 'util.gradle', to: project
+if (!project.util) {
+    apply from: 'util.gradle', to: project
+}
 
 println "Configuring $name's GitHub manager..."
 
@@ -6,8 +8,8 @@ buildscript {
     repositories {
         mavenCentral()
     }
-    
-    
+
+
     dependencies {
         classpath 'com.jcabi:jcabi-github:0.8.1'
     }
@@ -35,7 +37,7 @@ ext.createGithub = { oauth, user, pass ->
         method = 2
     }
     def rt_req = rt.entry().through(RetryWire.class).through(CarefulWire.class, 50)
-    
+
     if (method == 1) {
         // patch auth header
         rt_req = rt_req.header(
@@ -43,9 +45,9 @@ ext.createGithub = { oauth, user, pass ->
             String.format("Basic %s", EncodingGroovyMethods.encodeBase64("$user:$pass".getBytes()))
         )
     }
-    
+
     ext.githubAuthMethod = method
-    
+
     return new RtGithub(rt_req)
 }
 
@@ -85,13 +87,13 @@ ext.versionNext = { relsm ->
     if (!mat) {
         throw new IllegalArgumentException("project version ($pver) in wrong format")
     }
-    
+
     print "Comparing $pver..."
-    
+
     def pmajor = mat.group(1)
     def pminor = mat.group(2)
     def ppatch = mat.group(3)
-    
+
     def lver = relsm?.tag()
     if (lver) {
         print "to $lver..."
@@ -119,34 +121,6 @@ ext.versionNext = { relsm ->
     return pver
 }
 
-ext.assetArchiveDir = ".build/lib-base"
-ext.assetArchiveDestDir = ".build/lib-all"
-ext.aName = 'upload-' + version + '.zip'
-
-task _zipassets(type: Zip) << {
-    println "$project"
-    from project.assetArchiveDir
-    archiveName = project.aName
-    destinationDir = project.assetArchiveDestDir
-}
-
-ext.createAssetBytes = {
-    subprojects {
-        moveAssets()
-    }
-    project._zipassets.execute()
-    return file(assetArchiveDestDir + '/' + project.aName).getBytes()
-}
-
-subprojects {
-    ext.moveAssets = {
-        copy {
-            from 'build/libs'
-            into project.getParent().file(project.getParent().assetArchiveDir)
-        }
-    }
-}
-
 task setupGithub() << {
     def _ = project.ext
     _.projCoord = new Coordinates.Simple("TechShroom", "UnplannedDescent")
@@ -171,7 +145,7 @@ task release(dependsOn: ['setupGithub', 'doBuild']) << {
         println "Version unchanged."
         return
     }
-    
+
     def nrs = new Release.Smart(releases.create("v$ver"))
     if (_hasProperty("prerelease")) {
         nrs.prerelease(_property("prerelease").toBoolean())
@@ -179,15 +153,15 @@ task release(dependsOn: ['setupGithub', 'doBuild']) << {
     if (_hasProperty("name")) {
         nrs.name(_property("name"))
     }
-    
+
     def bytes = project.createAssetBytes()
-    
+
     def name = _property("name")
-    
+
     if (name == "" || name == null) {
         name = "UnplannedDescent-all-" + nrs.tag()
     }
-    
+
     nrs.assets().upload(bytes, "application/java-archive", "$name.jar")
 }
 
@@ -197,9 +171,9 @@ import java.net.HttpURLConnection;
 
 task clearRelease(dependsOn: 'setupGithub') << {
     def releases = project.proj.releases()
-    
+
     def rem = null
-    
+
     if (_hasProperty("remove")) {
         def ver = _property("remove")
         def itr = releases.iterate()
@@ -243,4 +217,5 @@ task clearRelease(dependsOn: 'setupGithub') << {
     }
 }
 
+ext.github = true
 println "Complete."

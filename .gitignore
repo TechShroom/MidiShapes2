@@ -11,3 +11,6 @@ bin/
 # gradle
 .gradle/
 build/
+
+# custom
+.build/
