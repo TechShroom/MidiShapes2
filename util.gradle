@@ -43,18 +43,16 @@ ext.assetArchiveDestDir = file(".build/lib-all")
 ext.aName = 'upload-' + project.version + '.zip'
 
 def mvalist = []
-def blist = []
 
 subprojects {
-    task moveAssets (type: Copy) << {
+    task moveAssets (type: Copy, dependsOn: ["build"]) << {
         from 'build/libs'
         into project.getParent().file(project.getParent().assetArchiveDir)
     }
     mvalist.add(project.moveAssets)
-    blist.add(project.build)
 }
 
-task _zipassets(type: Zip, dependsOn: [mvalist, blist]) {
+task _zipassets(type: Zip, dependsOn: mvalist) {
     println "$project"
     from project.assetArchiveDir
     archiveName = project.aName
