@@ -27,4 +27,4 @@ task travisRelease(dependsOn: ['_zipassets']) << {
     }
 }
 
-travisRelease.onlyIf { _hasProprerty("TRAVIS_PULL_REQUEST") && !_property("TRAVIS_PULL_REQUEST").toBoolean() }
+travisRelease.onlyIf { _hasProperty("TRAVIS_PULL_REQUEST") && !_property("TRAVIS_PULL_REQUEST").toBoolean() }
