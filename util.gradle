@@ -45,7 +45,7 @@ ext.aName = 'upload-' + project.version + '.zip'
 def mvalist = []
 
 subprojects {
-    task moveAssets (type: Copy, dependsOn: ["build"]) << {
+    task moveAssets (type: Copy, dependsOn: ["build"]) {
         from 'build/libs'
         into project.getParent().file(project.getParent().assetArchiveDir)
     }
