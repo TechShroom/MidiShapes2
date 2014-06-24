@@ -1,11 +1,15 @@
 language: java
 jdk:
-  - openjdk7
-  - oraclejdk7
-  # - openjdk6 # check if we need this at some point
+- openjdk7
+- oraclejdk7
 before_install:
-  - echo "JAVA6_HOME=$(jdk_switcher home jdk6)" >> gradle.properties
-  - cat gradle.properties
-  - export TRAVISCI="true"
+- echo "JAVA6_HOME=$(jdk_switcher home jdk6)" >> gradle.properties
+- cat gradle.properties
+- export TRAVISCI="true"
 after_success:
-  - gradle travisRelease
+- gradle travisRelease
+env:
+  FTP_PASSWORD:
+    secure: LjFosDqfdiqOItGW2tkUEaqV1lMEhYRiUl/GTBK49Qi0TkwSUNV2l/hcNZLao4xct3hnHssWakGob8uR5ZUlmqFTxUwRkR5KhdPiTNcVvnVvsvhIgtWpUOSfrYvFan5xVrHlB92tnZqa64zWsHT5zYE5lF+kLPBt2hFLoSWH81U=
+  FTP_USER:
+    secure: ELcM2y/AFgwH/nfQ00oE/h+zVvu71/D5J3GTTNrWNTiPMeXQf6GxGw7nsToWLmIlGJqJd41XzqW/gqqeW/Z1D9kCT7d/WHar9OA33RBaMLDJgRXWS9T3u4yIs5qSqT9XSxpMhahbLjwjvqgFM2IAOw1fSsJQS8EHA9IKhuVMIM4=
