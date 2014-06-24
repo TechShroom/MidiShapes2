@@ -1,4 +1,4 @@
-FTP_USER="ket1999"
+ext.FTP_USER="ket1999"
 version = ext.version = "1.0.0"
 subprojects {
     apply plugin: 'java'
