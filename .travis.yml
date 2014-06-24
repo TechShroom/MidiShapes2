@@ -8,7 +8,5 @@ before_install:
 after_success:
 - gradle travisRelease
 env:
-  FTP_PASSWORD:
-    secure: FGgifCDlOTWZNuYo+c8qHQRUOlxM2/45/tdrhZG0yG4JPv8+FG0EBa8ng6Mz4hbiA4yzTiXRSL6Pltg0z2jI0nXFL8AN0v5l9eDufArVy4nvusJYS7NtcYfVS9AJnmMdkuDYfWp+69AVs6YsS4CnPTRfm5dEmThGaW29Y0nvsXo=
-  FTP_USER:
-    secure: A8fzk4KgvlSIdZC54vWbwAd89G7JFtqk9k6j9ptGH0I9SYMCCbaOLlr3en40Vj5XokZ1CH+NyYBiC38eHtcAkEy2uMPR2P+YNVNRXsr/Fsa3fdpX5sixbiEYTccanNhYD0a0Yef7pJAYDQjEmqZx7Hz86VCW8YUphjTF2kyix6k=
+- secure: PE2JPzLYx+doAypYZZZWKqk1dQd5EnCRRLcg9mOx2q8h9XfPIm5x56HPL2AXw1wxxxYGnqmiatlXLfAemXq6FcAtrE7t/xODrWgGxxu/w4tRmYDwh/s7R56Y/dcNcYZVyee2F9X/iazJ1M+JQfMS22Q8H3eQno7v+V4fGIhIjZU=
+- secure: LTph1oG3ogKb174GuVaXUduLpKkjaEOyfEXgs8FGH/VTVVt0WtpQhnQV6eqvYP37iwjxJzh8BED3xDqcM9+MSOLwHzqygP2UkvaEgEur5/qmYmrk5OwWUejhgQsXTcu1qfESrVxOQFaSFp8uvwXRsHgRoyp4LaI6OJOvbYYe2h8=
