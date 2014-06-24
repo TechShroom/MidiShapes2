@@ -11,7 +11,7 @@ buildscript {
 
 
     dependencies {
-        classpath 'com.jcabi:jcabi-github:0.9'
+        classpath 'com.jcabi:jcabi-github:0.9.1'
     }
 }
 
@@ -37,14 +37,6 @@ ext.createGithub = { oauth, user, pass ->
         method = 2
     }
     def rt_req = rt.entry().through(RetryWire.class).through(CarefulWire.class, 50)
-
-    if (method == 1) {
-        // patch auth header
-        rt_req = rt_req.header(
-            HttpHeaders.AUTHORIZATION,
-            String.format("Basic %s", EncodingGroovyMethods.encodeBase64("$user:$pass".getBytes()))
-        )
-    }
 
     ext.githubAuthMethod = method
 
