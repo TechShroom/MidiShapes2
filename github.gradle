@@ -11,7 +11,7 @@ buildscript {
 
 
     dependencies {
-        classpath 'com.jcabi:jcabi-github:0.8.1'
+        classpath 'com.jcabi:jcabi-github:0.9'
     }
 }
 
@@ -49,17 +49,6 @@ ext.createGithub = { oauth, user, pass ->
     ext.githubAuthMethod = method
 
     return new RtGithub(rt_req)
-}
-
-import javax.json.*
-
-ext.safeName = { release ->
-    def json = new SmartJson(release)
-    def name = json.value('name', JsonValue.class)
-    if (name == JsonValue.NULL) {
-        return null
-    }
-    return name.toString()
 }
 
 ext.getLastRelSmart = { releases ->
@@ -178,8 +167,9 @@ task clearRelease(dependsOn: 'setupGithub') << {
         def ver = _property("remove")
         def itr = releases.iterate()
         for (item in itr) {
-            if (new Release.Smart(item).tag() == ver || project.safeName(item) == ver) {
-                rem = item
+            def rsm = new Release.Smart(item)
+            if (rsm.tag() == ver || (rsm.hasName() && rsm.name() == ver)) {
+                rem = rsm
                 break
             }
         }
