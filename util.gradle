@@ -39,7 +39,7 @@ ext.getJDK6RT = { ->
 }
 
 ext.assetArchiveDir = ".build/lib-base"
-ext.assetArchiveDestDir = file(".build/lib-all")
+ext.assetArchiveDestDir = ".build/lib-all"
 ext.aName = 'upload-' + project.version + '.zip'
 
 def mvalist = []
@@ -55,7 +55,7 @@ subprojects {
 task _zipassets(type: Zip, dependsOn: mvalist) {
     from project.assetArchiveDir
     archiveName = project.aName
-    destinationDir = project.assetArchiveDestDir
+    destinationDir = project.file(project.assetArchiveDestDir)
 }
 
 task createAssetBytes(dependsOn: ['_zipassets']) << {
