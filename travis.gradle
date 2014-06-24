@@ -3,7 +3,7 @@ println "Travis CI mode enabled!"
 task travisRelease(dependsOn: ['_zipassets']) << {
 
     def commit_sha = ""
-    
+
     def prestd = new ByteArrayOutputStream()
 
     // fetch commit sha for name
@@ -26,3 +26,5 @@ task travisRelease(dependsOn: ['_zipassets']) << {
         args '--ftp-create-dirs', '-T', "$file", '-u', "$FTP_USER:$FTP_PASSWORD", 'ftp://475.076.myftpupload.com/non-wp/uploads/travis-ci/commital/' + "UD-$commit_sha-all.zip"
     }
 }
+
+travisRelease.onlyIf { !_property("TRAVIS_PULL_REQUEST").toBoolean() }
