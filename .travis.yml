@@ -5,7 +5,6 @@ jdk:
 before_install:
 - echo "JAVA6_HOME=$(jdk_switcher home jdk6)" >> gradle.properties
 - cat gradle.properties
-- export TRAVISCI="true"
 after_success:
 - gradle travisRelease
 env:
