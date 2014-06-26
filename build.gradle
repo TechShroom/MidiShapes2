@@ -50,9 +50,17 @@ subprojects {
 
     // java 6 compat
     compileJava.sourceCompatibility = '1.6'
+    compileJava.targetCompatibility = '1.6'
     compileJava.options.bootClasspath = getJDK6RT()
 
     apply plugin: 'eclipse'
+    
+    eclipse {
+        jdt {
+            sourceCompatibility = 1.6
+            targetCompatibility = 1.6
+        }
+    }
 
     // eclipse bug workaround
     task reeclipse(dependsOn: ['cleanEclipseClasspath', 'eclipse'])
