@@ -13,7 +13,7 @@ task travisRelease(dependsOn: ['_zipassets']) << {
         standardOutput = prestd
     }
 
-    commit_sha = prestd.toString()
+    commit_sha = prestd.toString().replace('"', '')
 
     exec {
         executable 'curl'
