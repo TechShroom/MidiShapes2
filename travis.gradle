@@ -1,5 +1,7 @@
 println "Travis CI mode enabled!"
 
+ext.travis = true
+
 task travisRelease(dependsOn: ['_zipassets']) << {
 
     def commit_sha = ""
