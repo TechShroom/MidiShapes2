@@ -91,7 +91,7 @@ subprojects {
             }
             
             // lwjgl3
-            compile files("lwjgl3/lib/lwjgl3.jar") {
+            compile files("../lwjgl3/lib/lwjgl3.jar") {
                 builtBy ':lwjgl3:jar'
             }
 
