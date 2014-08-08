@@ -20,3 +20,7 @@ build/
 /lwjgl3/*
 !/lwjgl3/build.gradle
 !/lwjgl3/ant-delegate*
+
+# wrapper
+!/gradle/wrapper/gradle-wrapper.jar
+
