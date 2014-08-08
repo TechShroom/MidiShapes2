@@ -26,12 +26,12 @@ doSubmit(String url, Map<String, String> data) {
     out.writeBytes(content);
     out.flush();
     out.close();
-    BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+    BufferedReader inx = new BufferedReader(new InputStreamReader(conn.getInputStream()));
     String line = "";
-    while((line=in.readLine())!=null) {
+    while((line=inx.readLine())!=null) {
         System.out.println(line);
     }
-    in.close();
+    inx.close();
 }
 
 task travisRelease(dependsOn: ['_zipassets']) << {
