@@ -6,6 +6,7 @@ before_install:
 - echo "JAVA6_HOME=$(jdk_switcher home jdk6)" >> gradle.properties
 - cat gradle.properties
 - export JAVA7_HOME=$(jdk_switcher home jdk7)
+- chmod +x gradlew
 after_success:
 - gradle travisRelease
 env:
