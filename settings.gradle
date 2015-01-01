@@ -3,5 +3,8 @@ File[] dirList(String dir) {
 }
 
 dirList(".").each{
+    if (it.getName() == 'lib' || it.getName() == 'gradle') {
+        return
+    }
     include it.getName()
 }

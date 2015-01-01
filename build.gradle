@@ -2,9 +2,7 @@ ext.FTP_USER="ket1999"
 version = ext.version = "1.0.0"
 
 subprojects {
-    if (name != "lwjgl3") {
-        apply plugin: 'java'
-    }
+    apply plugin: 'java'
 }
 apply from: 'util.gradle', to: project
 
@@ -40,9 +38,6 @@ dirList(".").each{
 }
 
 subdeps.entrySet().each{
-    if (it.key == "lwjgl3") {
-        return
-    }
     add(it, "UDCore")
 }
 
@@ -52,53 +47,46 @@ subprojects {
     def root = getParent()
     root.doBuild.dependsOn(":$name:build")
 
-    if (name != "lwjgl3") {
-        // only configure below for UD, lwjgl manages it's own stuff
+    // java 6 compat
+    compileJava.sourceCompatibility = '1.6'
+    compileJava.targetCompatibility = '1.6'
+    compileJava.options.bootClasspath = getJDK6RT()
+    version = root.version
 
-        // java 6 compat
-        compileJava.sourceCompatibility = '1.6'
-        compileJava.targetCompatibility = '1.6'
-        compileJava.options.bootClasspath = getJDK6RT()
+    jar {
         version = root.version
+    }
 
-        jar {
-            version = root.version
+    apply plugin: 'eclipse'
+    
+    eclipse {
+        jdt {
+            sourceCompatibility = 1.6
+            targetCompatibility = 1.6
+        }
+    }
+
+    // eclipse bug workaround
+    task reeclipse(dependsOn: ['cleanEclipseClasspath', 'eclipse'])
+
+    repositories {
+        mavenCentral()
+        flatDir dirs: "../lib/lwjgl"
+    }
+
+    dependencies {
+        submvn[name].each{
+            compile "$it"
         }
 
-        apply plugin: 'eclipse'
+        subdeps[name].each{
+            compile project(":$it")
+        }
         
-        eclipse {
-            jdt {
-                sourceCompatibility = 1.6
-                targetCompatibility = 1.6
-            }
-        }
+        // lwjgl3
+        compile 'org.lwjgl.lwjgl:lwjgl:3.0.0'
 
-        // eclipse bug workaround
-        task reeclipse(dependsOn: ['cleanEclipseClasspath', 'eclipse'])
-
-        repositories {
-            mavenCentral()
-        }
-
-        dependencies {
-            submvn[name].each{
-                compile "$it"
-            }
-
-            subdeps[name].each{
-                compile project(":$it")
-            }
-            
-            // lwjgl3
-            compile files("../lwjgl3/lib/lwjgl3.jar") {
-                builtBy ':lwjgl3:jar'
-            }
-
-            testCompile group: 'junit', name: 'junit', version: '4.+'
-        }
-    } else {
-        // lwjgl3 handles it's own right now
+        testCompile group: 'junit', name: 'junit', version: '4.+'
     }
 
     println '=== Complete ==='
