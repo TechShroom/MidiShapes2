@@ -1,7 +1,7 @@
 package com.techshroom.unplanned;
 
-import com.techshroom.unplanned.util.stepbuilder.FinalStep;
-import com.techshroom.unplanned.util.stepbuilder.StepBuilder;
+import com.techshroom.tscore.util.stepbuilder.FinalStep;
+import com.techshroom.tscore.util.stepbuilder.StepBuilder;
 
 public class WindowBuilder implements StepBuilder<Object, FinalStep<Object>> {
 	@Override
