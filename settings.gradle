@@ -3,7 +3,7 @@ File[] dirList(String dir) {
 }
 
 dirList(".").each{
-    if (it.getName() == 'lib' || it.getName() == 'gradle') {
+    if (it.getName() == 'lib' || it.getName() == 'gradle' || it.getName() == 'buildSrc') {
         return
     }
     include it.getName()

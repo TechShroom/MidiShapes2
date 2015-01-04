@@ -8,10 +8,13 @@
 .settings/
 .recommenders/
 bin/
+.factorypath
+/**/.gitignore
 
 # gradle
 .gradle/
 build/
+libs/
 
 # custom
 .build/
@@ -24,4 +27,3 @@ build/
 
 # wrapper
 !/gradle/wrapper/gradle-wrapper.jar
-
