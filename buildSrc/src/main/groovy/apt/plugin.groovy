@@ -49,6 +49,7 @@ public class plugin implements Plugin<Project> {
         }
 
         project.task("writeFactoryPathFile", dependsOn: 'copyInAPTThings') {
+            mustRunAfter 'cleanWriteFactoryPathFile'
             description "Writes the factory path for Eclipse"
             ext.outputFile = ".factorypath"
             inputs.file(project.copyInAPTThings.outputs.getFiles().iterator().next())
@@ -67,7 +68,14 @@ public class plugin implements Plugin<Project> {
                 }
             }
         }
+        
+        project.task("cleanWriteFactoryPathFile", type: Delete) {
+            description "Cleans writeFactoryPathFile"
+            delete ".factorypath"
+        }
 
+        project.cleanEclipseClasspath.dependsOn(project.cleanWriteFactoryPathFile)
+        project.cleanEclipseClasspath.dependsOn(project.cleanCopyInAPTThings)
         project.eclipseClasspath.dependsOn(project.writeFactoryPathFile)
     }
 }

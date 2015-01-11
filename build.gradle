@@ -6,11 +6,6 @@ subprojects {
 }
 apply from: 'util.gradle', to: project
 
-if (!project.hasJDK6RT()) {
-    throw new RuntimeException("Need to know where your JDK6 rt.jar is! " +
-    "(set JAVA6_HOME to a jdk6 home or set JDK6_RT to the rt.jar)")
-}
-
 // token: a54f9f87121b530f4a918f7b156efb2c259ff0db
 
 // ext.oauth = "a54f9f87121b530f4a918f7b156efb2c259ff0db"
@@ -41,16 +36,17 @@ subdeps.entrySet().each{
     add(it, "UDCore")
 }
 
+subdeps['UDWindows'].add('UDKeyboard')
+
 subprojects {
     println "=== Configuring $name ==="
 
     def root = getParent()
     root.doBuild.dependsOn(":$name:build")
 
-    // java 6 compat
-    compileJava.sourceCompatibility = '1.6'
-    compileJava.targetCompatibility = '1.6'
-    compileJava.options.bootClasspath = getJDK6RT()
+    // java 7 compat
+    compileJava.sourceCompatibility = '1.7'
+    compileJava.targetCompatibility = '1.7'
     version = root.version
 
     jar {
@@ -85,7 +81,9 @@ subprojects {
             failOnVersionConflict()
 
             // force certain versions of dependencies (including transitive)
-            force 'com.google.auto.service:auto-service:1.0-rc2', 'com.google.guava:guava:18.0'
+            force 'com.google.auto.service:auto-service:1.0-rc2'
+            force 'com.google.guava:guava:18.0'
+            force 'com.squareup:javawriter:2.5.1'
 
             cacheDynamicVersionsFor 10, 'minutes'
             // don't cache changing modules at all
@@ -110,6 +108,7 @@ subprojects {
         compile 'org.functionaljava:functionaljava:4.2-beta-1'
         // I think this is only for java 8 // compile 'org.functionaljava:functionaljava-java8:4.2-beta-1'
         addAPTReqWComp group: 'com.google.guava', name: 'guava', version: '18.0'
+        addAPTReqWComp group: 'com.squareup', name: 'javawriter', version: '2.5.1'
         addAPT group: 'com.google.auto.factory', name: 'auto-factory', version: '0.1-beta1'
         addAPT group: 'com.google.auto.service', name: 'auto-service', version: '1.0-rc2'
         addAPT group: 'com.google.auto.value', name: 'auto-value', version: '1.0-rc4'
@@ -121,7 +120,6 @@ subprojects {
         addAPTReq name: 'commons-collections'
         addAPTReq name: 'commons-lang'
         addAPTReq name: 'dagger'
-        addAPTReq name: 'javawriter'
         addAPTReq name: 'javax.inject'
         addAPTReq name: 'velocity'
 
