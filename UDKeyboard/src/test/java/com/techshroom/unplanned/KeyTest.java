@@ -9,6 +9,7 @@ import org.lwjgl.glfw.GLFW;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
+import com.techshroom.unplanned.keyboard.Key;
 
 /**
  * Testing for the {@link Key} class.

@@ -18,7 +18,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.squareup.javawriter.JavaWriter;
-import com.techshroom.unplanned.Key;
+import com.techshroom.unplanned.keyboard.Key;
 
 import fj.data.Array;
 

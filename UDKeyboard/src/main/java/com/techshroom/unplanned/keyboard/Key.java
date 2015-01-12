@@ -1,4 +1,4 @@
-package com.techshroom.unplanned;
+package com.techshroom.unplanned.keyboard;
 
 import org.lwjgl.glfw.GLFW;
 
