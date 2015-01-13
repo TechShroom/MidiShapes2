@@ -1,4 +1,4 @@
-package com.techshroom.unplanned;
+package com.techshroom.unplanned.window;
 
 import com.techshroom.tscore.util.stepbuilder.FinalStep;
 import com.techshroom.tscore.util.stepbuilder.StepBuilder;
