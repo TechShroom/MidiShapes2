@@ -3,7 +3,6 @@ jdk:
 - openjdk7
 - oraclejdk7
 before_install:
-- echo "JAVA6_HOME=$(jdk_switcher home jdk6)" >> gradle.properties
 - export JAVA7_HOME=$(jdk_switcher home jdk7)
 after_success:
 - gradle travisRelease
