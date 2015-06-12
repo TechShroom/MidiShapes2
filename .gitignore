@@ -17,8 +17,3 @@ libs/
 # custom
 .build/
 *.log*
-
-# lwjgl mucking about
-/lwjgl3/*
-!/lwjgl3/build.gradle
-!/lwjgl3/ant-delegate*
