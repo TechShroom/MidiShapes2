@@ -37,7 +37,6 @@ subprojects {
         maven {
             url "https://oss.sonatype.org/content/repositories/snapshots/"
         }
-        flatDir dirs: rootProject.file('lwjgl3/jar')
     }
     configurations.all {
        resolutionStrategy {
@@ -57,13 +56,16 @@ subprojects {
 
     dependencies {
         compile group: 'com.techshroom', name: 'StepBuilder', version: '1.0.0'
-        compile group: 'com.lwjgl', name: 'lwjgl', version: '3.0.0-52'
+        compile group: 'org.lwjgl', name: 'lwjgl', version: '3.0.0b-SNAPSHOT'
+        compile group: 'org.lwjgl', name: 'lwjgl-platform', version: '3.0.0b-SNAPSHOT', classifier: 'osx'
+        compile group: 'org.lwjgl', name: 'lwjgl-platform', version: '3.0.0b-SNAPSHOT', classifier: 'linux'
+        compile group: 'org.lwjgl', name: 'lwjgl-platform', version: '3.0.0b-SNAPSHOT', classifier: 'windows'
         compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.0.2'
         compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.0.2'
         compile group: 'net.sf.jopt-simple', name: 'jopt-simple', version: '4.7'
         compile group: 'com.google.code.gson', name: 'gson', version: '2.3'
         compile group: 'com.google.inject', name: 'guice', version: '3.0'
-        compile group: 'com.squareup', name: 'javapoet', version: '1.2.0-SNAPSHOT'
+        compile group: 'com.squareup', name: 'javapoet', version: '1.3.0-SNAPSHOT'
         compile group: 'com.squareup.okio', name: 'okio', version: '1.3.0'
         addAPTReqWComp group: 'com.google.guava', name: 'guava', version: '18.0'
         addAPT group: 'com.google.auto.factory', name: 'auto-factory', version: '1.0-SNAPSHOT'
