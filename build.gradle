@@ -57,9 +57,9 @@ subprojects {
     dependencies {
         compile group: 'com.techshroom', name: 'StepBuilder', version: '1.0.0'
         compile group: 'org.lwjgl', name: 'lwjgl', version: '3.0.0b-SNAPSHOT'
-        compile group: 'org.lwjgl', name: 'lwjgl-platform', version: '3.0.0b-SNAPSHOT', classifier: 'osx'
-        compile group: 'org.lwjgl', name: 'lwjgl-platform', version: '3.0.0b-SNAPSHOT', classifier: 'linux'
-        compile group: 'org.lwjgl', name: 'lwjgl-platform', version: '3.0.0b-SNAPSHOT', classifier: 'windows'
+        compile group: 'org.lwjgl', name: 'lwjgl-platform', version: '3.0.0b-SNAPSHOT', classifier: 'natives-osx'
+        compile group: 'org.lwjgl', name: 'lwjgl-platform', version: '3.0.0b-SNAPSHOT', classifier: 'natives-linux'
+        compile group: 'org.lwjgl', name: 'lwjgl-platform', version: '3.0.0b-SNAPSHOT', classifier: 'natives-windows'
         compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.0.2'
         compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.0.2'
         compile group: 'net.sf.jopt-simple', name: 'jopt-simple', version: '4.7'
