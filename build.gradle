@@ -1,4 +1,4 @@
-version = '1.0.0'
+version = '0.0.1'
 buildscript {
     repositories {
         mavenCentral()
@@ -9,7 +9,7 @@ buildscript {
             url "http://techshroom.github.io/downloads/maven"
         }
     }
-    
+
     configurations.all {
         resolutionStrategy {
             cacheChangingModulesFor 0, 'seconds'
