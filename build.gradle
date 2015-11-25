@@ -72,17 +72,7 @@ subprojects {
          cacheChangingModulesFor 0, 'seconds'
        }
     }
-
     dependencies {
-        addLWJGL(project, '', true);
-        addLWJGL(project, 'opengl', true);
-        addLWJGL(project, 'openal', true);
-        addLWJGL(project, 'glfw', true);
-        addLWJGL(project, 'nanovg', true);
-        addLWJGL(project, 'stb', true);
-        addLWJGL(project, 'jemalloc', true);
-        addLWJGL(project, 'nfd', true);
-
         compile group: 'com.techshroom', name: 'StepBuilder', version: '1.0.0'
 
         compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
@@ -122,6 +112,15 @@ subprojects {
 
 project('UDImpl') {
     dependencies {
+        addLWJGL(project, '', true);
+        addLWJGL(project, 'opengl', true);
+        addLWJGL(project, 'openal', true);
+        addLWJGL(project, 'glfw', true);
+        addLWJGL(project, 'nanovg', true);
+        addLWJGL(project, 'stb', true);
+        addLWJGL(project, 'jemalloc', true);
+        addLWJGL(project, 'nfd', true);
+        
         compile project(':UDAPI')
     }
 }
