@@ -6,7 +6,6 @@
 .recommenders/
 bin/
 .factorypath
-/**/.gitignore
 .apt_generated
 
 # gradle
