@@ -92,6 +92,8 @@ subprojects {
         compile group: 'com.squareup.okio', name: 'okio', version: '1.3.0'
 
         addAPTReqWComp group: 'com.google.guava', name: 'guava', version: '21.0'
+        // FIX: remove compile warnings from Guava, see https://github.com/google/guava/issues/2721
+        compileOnly 'com.google.errorprone:error_prone_annotations:2.0.15'
         addAPT group: 'com.google.auto.service', name: 'auto-service', version: '1.0-rc3'
         addAPT group: 'com.google.auto.value', name: 'auto-value', version: '1.4'
         addAPTReq name: 'aopalliance'
@@ -107,6 +109,18 @@ subprojects {
         addAPTReq name: 'velocity'
 
         testCompile group: 'junit', name: 'junit', version: '4.12'
+    }
+
+	javadoc {
+        options.addStringOption('Xdoclint:none', '-quiet')
+    }
+
+    configure([compileJava, compileTestJava]) {
+        options.compilerArgs += ['-Xlint:all', '-Xlint:-processing', '-Xlint:-path']
+        options.deprecation = true
+        options.encoding = 'UTF-8'
+        options.incremental = true
+        options.fork = true
     }
 }
 
