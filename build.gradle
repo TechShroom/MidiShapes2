@@ -17,6 +17,8 @@ buildscript {
     }
     dependencies {
         classpath group: 'com.techshroom', name: 'Aversion', version: '3.0.0'
+        classpath "gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.14.0"
+        classpath "com.github.jengelman.gradle.plugins:shadow:1.2.4"
     }
 }
 ext.lwjglVersion = '3.1.2-SNAPSHOT'
@@ -42,6 +44,24 @@ subprojects {
     apply plugin: 'aversion-util'
     apply plugin: 'aversion-maven'
     apply plugin: 'aversion-apt'
+    apply plugin: "com.github.hierynomus.license"
+
+    license {
+        ext {
+            name = rootProject.name
+            organization = rootProject.organization
+            url = rootProject.url
+        }
+        header = rootProject.file('HEADER.txt')
+        ignoreFailures = false
+        strictCheck = true
+        include '**/*.java'
+        exclude '**/Sync.java'
+        exclude '**/Color.java'
+        mapping {
+            java = 'SLASHSTAR_STYLE'
+        }
+    }
 
     util {
         javaVersion = '1.8'
@@ -91,6 +111,8 @@ subprojects {
 
         compile group: 'com.squareup.okio', name: 'okio', version: '1.3.0'
 
+        compile group: 'com.flowpowered', name: 'flow-math', version: '1.0.3'
+
         addAPTReqWComp group: 'com.google.guava', name: 'guava', version: '21.0'
         // FIX: remove compile warnings from Guava, see https://github.com/google/guava/issues/2721
         compileOnly 'com.google.errorprone:error_prone_annotations:2.0.15'
@@ -124,6 +146,12 @@ subprojects {
     }
 }
 
+project('UDAPI') {
+    dependencies {
+        addLWJGL(project, 'stb', true);
+    }
+}
+
 project('UDImpl') {
     dependencies {
         addLWJGL(project, '', true);
@@ -136,5 +164,11 @@ project('UDImpl') {
         addLWJGL(project, 'nfd', true);
 
         compile project(':UDAPI')
+    }
+    apply plugin: 'com.github.johnrengelman.shadow'
+    jar {
+        manifest {
+            attributes 'Main-Class': 'com.techshroom.unplanned.SimpleRotatingCube'
+        }
     }
 }
