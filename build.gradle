@@ -161,6 +161,7 @@ project('UDImpl') {
         addLWJGL(project, 'stb', true);
         addLWJGL(project, 'jemalloc', true);
         addLWJGL(project, 'nfd', true);
+        addLWJGL(project, 'yoga', true);
 
         compile project(':UDAPI')
     }
