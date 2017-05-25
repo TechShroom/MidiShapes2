@@ -1,1 +1,1 @@
-include 'UDAPI', 'UDImpl', 'UDExamples'
+include 'UDAPI', 'UDImpl', 'UDExamples', 'MidiShapes2'
