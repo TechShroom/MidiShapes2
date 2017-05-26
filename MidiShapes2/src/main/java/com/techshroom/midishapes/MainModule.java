@@ -26,9 +26,19 @@ package com.techshroom.midishapes;
 
 import javax.inject.Singleton;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
+import com.google.inject.matcher.Matchers;
+import com.google.inject.spi.InjectionListener;
+import com.google.inject.spi.TypeEncounter;
+import com.google.inject.spi.TypeListener;
 import com.techshroom.unplanned.blitter.GraphicsContext;
+import com.techshroom.unplanned.event.Event;
 import com.techshroom.unplanned.input.Keyboard;
 import com.techshroom.unplanned.input.Mouse;
 import com.techshroom.unplanned.window.Window;
@@ -36,8 +46,22 @@ import com.techshroom.unplanned.window.WindowSettings;
 
 public class MainModule extends AbstractModule {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(MainModule.class);
+
     @Override
     protected void configure() {
+        // register everything with event bus
+        bindListener(Matchers.any(), new TypeListener() {
+
+            @Override
+            public <I> void hear(TypeLiteral<I> type, TypeEncounter<I> encounter) {
+                LOGGER.info("Registering {} with event bus", type);
+                encounter.register((InjectionListener<I>) Event.BUS::register);
+            }
+        });
+        // to explicitly register for events
+        bind(MidiScreenModel.class).in(Scopes.SINGLETON);
+        bind(MidiScreenView.class).in(Scopes.SINGLETON);
     }
 
     @Provides

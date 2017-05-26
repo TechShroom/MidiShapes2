@@ -69,6 +69,9 @@ public class MidiTiming {
         ImmutableRangeMap.Builder<Integer, OffsetTempoCalculator> tempoCalculators = ImmutableRangeMap.builder();
         int[] currentMicrosOffset = { 0 };
         ObjIntConsumer<SetTempoEvent> addTC = (event, latestTick) -> {
+            if (event.getTick() == latestTick) {
+                return;
+            }
             tempoCalculators.put(Range.closedOpen(event.getTick(), latestTick),
                     new OffsetTempoCalculator(currentMicrosOffset[0], timeEncoding, event));
         };

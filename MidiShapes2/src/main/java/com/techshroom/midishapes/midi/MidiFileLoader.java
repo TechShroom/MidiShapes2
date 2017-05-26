@@ -119,7 +119,9 @@ public class MidiFileLoader {
                 loadTrackChunk();
             }
         } finally {
-            inputs.removeLast();
+            if (!inputs.isEmpty()) {
+                inputs.removeLast();
+            }
         }
 
         ImmutableList<MidiTrack> tracks = trackList.build();
@@ -142,6 +144,7 @@ public class MidiFileLoader {
             format = readShort("format");
             tracks = readShort("tracks");
             division = readShort("divison");
+            System.err.println(Integer.toHexString(division));
         } finally {
             popLength();
         }
@@ -205,7 +208,7 @@ public class MidiFileLoader {
         b.put(Range.closedOpen(0xD0, 0xDF), Maps.immutableEntry(1, (tick, chan, data) -> {
             return ChannelAftertouchEvent.create(tick, chan.getAsInt(), data[0]);
         }));
-        b.put(Range.closedOpen(0xE0, 0xEF), Maps.immutableEntry(1, (tick, chan, data) -> {
+        b.put(Range.closedOpen(0xE0, 0xEF), Maps.immutableEntry(2, (tick, chan, data) -> {
             // yes, 7, each value is only 7 bits of data
             return PitchBendEvent.create(tick, chan.getAsInt(), data[0] & (data[1] << 7));
         }));
@@ -233,6 +236,7 @@ public class MidiFileLoader {
         ImmutableList.Builder<MidiEvent> events = ImmutableList.builder();
         readAndCheckTag("track", TRACK_TAG);
         int length = readInt("length");
+        System.err.println(length);
         pushLength(length);
         try {
 
@@ -411,22 +415,22 @@ public class MidiFileLoader {
 
     private short readShort(String description) throws IOException {
         readFully(description, readShortArray);
-        return (short) ((readShortArray[0] << 8) | (readShortArray[1]));
+        return (short) (((readShortArray[0] & 0xFF) << 8) + ((readShortArray[1] & 0xFF)));
     }
 
     private int read24BitValue(String description) throws IOException {
         readFully(description, read24Array);
-        return (read24Array[0] << 16)
-                | (read24Array[1] << 8)
-                | (read24Array[2]);
+        return ((read24Array[0] & 0xFF) << 16)
+                + ((read24Array[1] & 0xFF) << 8)
+                + ((read24Array[2] & 0xFF));
     }
 
     private int readInt(String description) throws IOException {
         readFully(description, readIntArray);
-        return (readIntArray[0] << 24)
-                | (readIntArray[1] << 16)
-                | (readIntArray[2] << 8)
-                | (readIntArray[3]);
+        return ((readIntArray[0] & 0xFF) << 24)
+                + ((readIntArray[1] & 0xFF) << 16)
+                + ((readIntArray[2] & 0xFF) << 8)
+                + ((readIntArray[3] & 0xFF));
     }
 
     private int readVarInt(String description) throws IOException {

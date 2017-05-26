@@ -49,5 +49,5 @@ public class MidiScreenView implements Drawable, LifecycleObject {
     @Override
     public void draw() {
     }
-    
+
 }
