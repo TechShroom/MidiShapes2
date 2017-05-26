@@ -144,7 +144,6 @@ public class MidiFileLoader {
             format = readShort("format");
             tracks = readShort("tracks");
             division = readShort("divison");
-            System.err.println(Integer.toHexString(division));
         } finally {
             popLength();
         }
@@ -236,7 +235,6 @@ public class MidiFileLoader {
         ImmutableList.Builder<MidiEvent> events = ImmutableList.builder();
         readAndCheckTag("track", TRACK_TAG);
         int length = readInt("length");
-        System.err.println(length);
         pushLength(length);
         try {
 

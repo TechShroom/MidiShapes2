@@ -26,10 +26,10 @@ package com.techshroom.midishapes;
 
 import static org.lwjgl.util.tinyfd.TinyFileDialogs.tinyfd_openFileDialog;
 
-import java.io.PrintStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 
 import javax.inject.Inject;
 
@@ -38,10 +38,8 @@ import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryUtil;
 
 import com.google.common.eventbus.Subscribe;
-import com.google.common.io.ByteStreams;
 import com.techshroom.midishapes.midi.MidiFile;
 import com.techshroom.midishapes.midi.MidiFileLoader;
-import com.techshroom.midishapes.midi.MidiTrack;
 import com.techshroom.unplanned.core.util.LifecycleObject;
 import com.techshroom.unplanned.event.keyboard.KeyState;
 import com.techshroom.unplanned.event.keyboard.KeyStateEvent;
@@ -50,9 +48,9 @@ import com.techshroom.unplanned.window.Window;
 
 import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
-import javafx.beans.binding.Bindings;
-import javafx.beans.binding.ObjectBinding;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ReadOnlyObjectProperty;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleObjectProperty;
 
 public class MidiScreenModel implements LifecycleObject {
@@ -84,32 +82,27 @@ public class MidiScreenModel implements LifecycleObject {
     // properties of the model
 
     private final ObjectProperty<Path> openFileProperty = new SimpleObjectProperty<>(this, "openFile");
-    private final ObjectBinding<MidiFile> openMidiFileBinding = Bindings.createObjectBinding(() -> {
-        Path path = openFileProperty.get();
-        return path == null ? null : MidiFileLoader.load(path);
-    }, openFileProperty);
+    private final ReadOnlyObjectWrapper<MidiFile> openMidiFileBinding = new ReadOnlyObjectWrapper<>(this, "openMidiFile");
 
     {
-        openMidiFileBinding.addListener(new InvalidationListener() {
+        openFileProperty.addListener(new InvalidationListener() {
 
             @Override
             public void invalidated(Observable arg0) {
-                if (openMidiFileBinding.get() == null) {
+                if (openFileProperty.get() == null) {
                     return;
                 }
-                List<MidiTrack> tracks = openMidiFileBinding.get().getTracks();
-                for (int i = 0; i < tracks.size(); i++) {
-                    System.err.println("Track " + i);
-                    tracks.get(i).getEvents().forEach(e -> {
-                        System.err.println("\t" + e);
-                    });
+                try {
+                    openMidiFileBinding.set(MidiFileLoader.load(openFileProperty.get()));
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
                 }
             }
         });
     }
 
-    public ObjectBinding<MidiFile> openMidiFileBinding() {
-        return openMidiFileBinding;
+    public ReadOnlyObjectProperty<MidiFile> openMidiFileBinding() {
+        return openMidiFileBinding.getReadOnlyProperty();
     }
 
     public ObjectProperty<Path> openFileProperty() {
@@ -127,11 +120,12 @@ public class MidiScreenModel implements LifecycleObject {
     @Subscribe
     public void onKey(KeyStateEvent event) {
         if (event.is(Key.O, KeyState.PRESSED)) {
-//            String file = tinyfd_openFileDialog("Pick a MIDI File", defaultOpenFolder, midiFileFilter, "MIDI Files", false);
-            String file = "/home/octy/Dropbox/Soul Eater - Resonance.mid";
+            String file = tinyfd_openFileDialog("Pick a MIDI File", defaultOpenFolder, midiFileFilter, "MIDI Files", false);
             if (file != null) {
                 setOpenFile(Paths.get(file));
             }
+        } else if (event.is(Key.SPACE, KeyState.PRESSED)) {
+            
         } else if (event.is(Key.ESCAPE, KeyState.PRESSED)) {
             window.setCloseRequested(true);
         }

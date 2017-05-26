@@ -182,6 +182,7 @@ project('MidiShapes2') {
         compile project(':UDAPI')
         compile project(':UDImpl')
         addLWJGL(project, 'tinyfd', true);
+        addLWJGL(project, 'openal', true);
     }
     apply plugin: 'com.github.johnrengelman.shadow'
     jar {

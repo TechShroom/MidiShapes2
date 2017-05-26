@@ -24,19 +24,20 @@
  */
 package com.techshroom.midishapes;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import javax.inject.Singleton;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
 import com.google.inject.matcher.Matchers;
-import com.google.inject.spi.InjectionListener;
-import com.google.inject.spi.TypeEncounter;
-import com.google.inject.spi.TypeListener;
+import com.google.inject.spi.ProvisionListener;
 import com.techshroom.unplanned.blitter.GraphicsContext;
 import com.techshroom.unplanned.event.Event;
 import com.techshroom.unplanned.input.Keyboard;
@@ -51,17 +52,22 @@ public class MainModule extends AbstractModule {
     @Override
     protected void configure() {
         // register everything with event bus
-        bindListener(Matchers.any(), new TypeListener() {
+        bindListener(Matchers.any(), new ProvisionListener() {
 
             @Override
-            public <I> void hear(TypeLiteral<I> type, TypeEncounter<I> encounter) {
-                LOGGER.info("Registering {} with event bus", type);
-                encounter.register((InjectionListener<I>) Event.BUS::register);
+            public <T> void onProvision(ProvisionInvocation<T> provision) {
+                LOGGER.info("Registering {} with event bus", provision.getBinding().getKey());
+                Event.BUS.register(provision.provision());
             }
         });
         // to explicitly register for events
         bind(MidiScreenModel.class).in(Scopes.SINGLETON);
         bind(MidiScreenView.class).in(Scopes.SINGLETON);
+        bind(ExecutorService.class)
+                .toInstance(Executors.newCachedThreadPool(new ThreadFactoryBuilder()
+                        .setDaemon(true)
+                        .setNameFormat("task-pool-%d")
+                        .build()));
     }
 
     @Provides
