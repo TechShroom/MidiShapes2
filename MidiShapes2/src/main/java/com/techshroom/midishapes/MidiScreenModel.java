@@ -1,7 +1,7 @@
 /*
  * This file is part of UnplannedDescent, licensed under the MIT License (MIT).
  *
- * Copyright (c) TechShroom Studios <https://techshoom.com>
+ * Copyright (c) TechShroom Studios <https://techshroom.com>
  * Copyright (c) contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -52,9 +52,11 @@ import com.techshroom.unplanned.window.Window;
 
 import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 
 public class MidiScreenModel implements LifecycleObject {
@@ -98,7 +100,8 @@ public class MidiScreenModel implements LifecycleObject {
     // properties of the model
 
     private final ObjectProperty<Path> openFileProperty = new SimpleObjectProperty<>(this, "openFile");
-    private final ReadOnlyObjectWrapper<MidiFile> openMidiFileBinding = new ReadOnlyObjectWrapper<>(this, "openMidiFile");
+    private final ReadOnlyObjectWrapper<MidiFile> openMidiFileProperty = new ReadOnlyObjectWrapper<>(this, "openMidiFile");
+    private final BooleanProperty loopingProperty = new SimpleBooleanProperty(this, "looping");
 
     {
         openFileProperty.addListener(new InvalidationListener() {
@@ -112,7 +115,7 @@ public class MidiScreenModel implements LifecycleObject {
                 }
                 defaultOpenFolder = path.toString();
                 try {
-                    openMidiFileBinding.set(MidiFileLoader.load(path));
+                    openMidiFileProperty.set(MidiFileLoader.load(path));
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
@@ -120,8 +123,12 @@ public class MidiScreenModel implements LifecycleObject {
         });
     }
 
-    public ReadOnlyObjectProperty<MidiFile> openMidiFileBinding() {
-        return openMidiFileBinding.getReadOnlyProperty();
+    public ReadOnlyObjectProperty<MidiFile> openMidiFileProperty() {
+        return openMidiFileProperty.getReadOnlyProperty();
+    }
+
+    public BooleanProperty loopingProperty() {
+        return loopingProperty;
     }
 
     public ObjectProperty<Path> openFileProperty() {
@@ -136,25 +143,35 @@ public class MidiScreenModel implements LifecycleObject {
         openFileProperty.set(file);
     }
 
+    public boolean isLooping() {
+        return loopingProperty.get();
+    }
+
+    public void setLooping(boolean looping) {
+        loopingProperty.set(looping);
+    }
+
     @Subscribe
     public void onKey(KeyStateEvent event) {
-        if (event.is(Key.O, KeyState.PRESSED)) {
+        if (event.is(Key.O, KeyState.RELEASED)) {
             POOL.submit(() -> {
                 String file = tinyfd_openFileDialog("Pick a MIDI File", defaultOpenFolder, midiFileFilter, "MIDI Files", false);
                 if (file != null) {
                     openFileTransfer = Paths.get(file);
                 }
             });
-        } else if (event.is(Key.SPACE, KeyState.PRESSED)) {
+        } else if (event.is(Key.L, KeyState.RELEASED)) {
+            setLooping(!isLooping());
+        } else if (event.is(Key.SPACE, KeyState.RELEASED)) {
             if (this.player.isRunning()) {
                 this.player.stop();
             } else {
-                MidiFile file = openMidiFileBinding.get();
+                MidiFile file = openMidiFileProperty.get();
                 if (file != null) {
                     this.player.play(file);
                 }
             }
-        } else if (event.is(Key.ESCAPE, KeyState.PRESSED)) {
+        } else if (event.is(Key.ESCAPE, KeyState.RELEASED)) {
             window.setCloseRequested(true);
         }
     }

@@ -1,7 +1,7 @@
 /*
  * This file is part of UnplannedDescent, licensed under the MIT License (MIT).
  *
- * Copyright (c) TechShroom Studios <https://techshoom.com>
+ * Copyright (c) TechShroom Studios <https://techshroom.com>
  * Copyright (c) contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -43,6 +43,7 @@ class MidiEngine implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MidiEngine.class);
 
+    private final Thread thread = new Thread(this, "MidiEngine");
     private volatile boolean running;
     private final ReadWriteLock runningLock = new ReentrantReadWriteLock();
     private final Condition runningCondition = runningLock.writeLock().newCondition();
@@ -53,10 +54,9 @@ class MidiEngine implements Runnable {
     private final AtomicReference<EventBus> events = new AtomicReference<>();
 
     MidiEngine() {
-        Thread t = new Thread(this, "MidiEngine");
-        t.setDaemon(true);
-        t.setPriority(Thread.MAX_PRIORITY);
-        t.start();
+        thread.setDaemon(true);
+        thread.setPriority(Thread.MAX_PRIORITY);
+        thread.start();
     }
 
     void start(MidiTiming timing, MidiSoundPlayer sounds, Iterator<MidiEvent> stream, Set<Object> listeners) {
@@ -77,6 +77,7 @@ class MidiEngine implements Runnable {
             listeners.forEach(eventBus::unregister);
         }
         setRunning(false);
+        thread.interrupt();
         sounds.set(null);
         timing.set(null);
         stream.set(null);
@@ -125,7 +126,8 @@ class MidiEngine implements Runnable {
                 try {
                     playMidiStream();
                 } catch (EarlyReturnError returned) {
-                    if (Thread.interrupted()) {
+                    // thread may be interrupted to stop a running track
+                    if (running && Thread.interrupted()) {
                         throw new InterruptedException();
                     }
                 }

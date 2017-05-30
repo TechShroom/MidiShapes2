@@ -1,7 +1,7 @@
 /*
  * This file is part of UnplannedDescent, licensed under the MIT License (MIT).
  *
- * Copyright (c) TechShroom Studios <https://techshoom.com>
+ * Copyright (c) TechShroom Studios <https://techshroom.com>
  * Copyright (c) contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -144,7 +144,7 @@ public class MidiScreenView implements Drawable, LifecycleObject {
 
     @Override
     public void initialize() {
-        this.model.openMidiFileBinding().addListener((obs, oldVal, newVal) -> {
+        this.model.openMidiFileProperty().addListener((obs, oldVal, newVal) -> {
             destroyPianos();
 
             for (int channel : newVal.getChannels()) {
@@ -152,6 +152,9 @@ public class MidiScreenView implements Drawable, LifecycleObject {
                 pianos.add(piano);
                 this.player.addMidiEventListener(piano);
             }
+        });
+        this.model.loopingProperty().addListener((obs, oldVal, newVal) -> {
+            player.setLooping(newVal);
         });
 
         ColorTextureLoader colorLoader = StandardTextureLoaders.RGBA_COLOR_LOADER;

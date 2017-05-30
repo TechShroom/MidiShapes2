@@ -1,7 +1,7 @@
 /*
  * This file is part of UnplannedDescent, licensed under the MIT License (MIT).
  *
- * Copyright (c) TechShroom Studios <https://techshoom.com>
+ * Copyright (c) TechShroom Studios <https://techshroom.com>
  * Copyright (c) contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -25,10 +25,14 @@
 package com.techshroom.midishapes.midi;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.ObjIntConsumer;
 import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableRangeMap;
 import com.google.common.collect.Range;
@@ -39,6 +43,8 @@ import com.techshroom.midishapes.midi.event.meta.SetTempoEvent;
  * MIDI timing is a fun bag of beans!
  */
 public class MidiTiming {
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger(MidiTiming.class);
 
     /**
      * Calculate MIDI timings. Does not work properly for
@@ -49,17 +55,19 @@ public class MidiTiming {
      *            the track that contains the tempo values
      * @return
      */
-    public static MidiTiming calculate(MidiTimeEncoding timeEncoding, MidiTrack tempoTrack) {
-        List<SetTempoEvent> tempoEvents = tempoTrack.getEvents().stream()
+    public static MidiTiming calculate(MidiTimeEncoding timeEncoding, List<MidiTrack> tracks) {
+        List<SetTempoEvent> tempoEvents = tracks.stream().flatMap(t -> t.getEvents().stream())
                 .filter(SetTempoEvent.class::isInstance)
                 .map(SetTempoEvent.class::cast)
+                .sorted(Comparator.comparingInt(SetTempoEvent::getTick))
                 .collect(Collectors.toCollection(ArrayList::new));
 
         SetTempoEvent prev;
         // check if we need a fake 120 BPM to start
-        if (tempoEvents.isEmpty() || tempoEvents.get(0).getTick() == 0) {
+        if (tempoEvents.isEmpty() || tempoEvents.get(0).getTick() != 0) {
             // no tempo events OR no zero tick event
             prev = SetTempoEvent.createBpm(0, 0, 120);
+            LOGGER.info("No initial tempo set in track, using 120 BPM");
         } else {
             // zero tick event
             prev = tempoEvents.get(0);

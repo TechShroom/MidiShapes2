@@ -1,7 +1,7 @@
 /*
  * This file is part of UnplannedDescent, licensed under the MIT License (MIT).
  *
- * Copyright (c) TechShroom Studios <https://techshoom.com>
+ * Copyright (c) TechShroom Studios <https://techshroom.com>
  * Copyright (c) contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -131,12 +131,14 @@ public class MidiFileLoader {
         // scan for channels in parallel
         ImmutableSet<Integer> channels = tracks.stream()
                 .flatMap(mt -> mt.getEvents().stream())
+                // only note channels that are going to be played on
+                .filter(NoteOnEvent.class::isInstance)
                 .mapToInt(MidiEvent::getChannel)
                 .distinct()
                 .boxed()
                 .parallel()
                 .collect(toImmutableSet());
-        return MidiFile.of(source, midiType, channels, tracks, MidiTiming.calculate(timeEncoding, tracks.get(0)));
+        return MidiFile.of(source, midiType, channels, tracks, MidiTiming.calculate(timeEncoding, tracks));
     }
 
     // assumptions made here
@@ -199,25 +201,25 @@ public class MidiFileLoader {
         ImmutableRangeMap.Builder<Integer, Entry<Integer, MidiEventConstructor>> b = ImmutableRangeMap.builder();
 
         // channel messages
-        b.put(Range.closedOpen(0x80, 0x8F), Maps.immutableEntry(2, (tick, chan, data) -> {
+        b.put(Range.closed(0x80, 0x8F), Maps.immutableEntry(2, (tick, chan, data) -> {
             return NoteOffEvent.create(tick, chan, data[0], data[1]);
         }));
-        b.put(Range.closedOpen(0x90, 0x9F), Maps.immutableEntry(2, (tick, chan, data) -> {
+        b.put(Range.closed(0x90, 0x9F), Maps.immutableEntry(2, (tick, chan, data) -> {
             return NoteOnEvent.create(tick, chan, data[0], data[1]);
         }));
-        b.put(Range.closedOpen(0xA0, 0xAF), Maps.immutableEntry(2, (tick, chan, data) -> {
+        b.put(Range.closed(0xA0, 0xAF), Maps.immutableEntry(2, (tick, chan, data) -> {
             return NoteAftertouchEvent.create(tick, chan, data[0], data[1]);
         }));
-        b.put(Range.closedOpen(0xB0, 0xBF), Maps.immutableEntry(2, (tick, chan, data) -> {
+        b.put(Range.closed(0xB0, 0xBF), Maps.immutableEntry(2, (tick, chan, data) -> {
             return controlChange(tick, chan, data[0], data[1]);
         }));
-        b.put(Range.closedOpen(0xC0, 0xCF), Maps.immutableEntry(1, (tick, chan, data) -> {
+        b.put(Range.closed(0xC0, 0xCF), Maps.immutableEntry(1, (tick, chan, data) -> {
             return ProgramChangeEvent.create(tick, chan, data[0]);
         }));
-        b.put(Range.closedOpen(0xD0, 0xDF), Maps.immutableEntry(1, (tick, chan, data) -> {
+        b.put(Range.closed(0xD0, 0xDF), Maps.immutableEntry(1, (tick, chan, data) -> {
             return ChannelAftertouchEvent.create(tick, chan, data[0]);
         }));
-        b.put(Range.closedOpen(0xE0, 0xEF), Maps.immutableEntry(2, (tick, chan, data) -> {
+        b.put(Range.closed(0xE0, 0xEF), Maps.immutableEntry(2, (tick, chan, data) -> {
             // yes, 7, each value is only 7 bits of data
             return PitchBendEvent.create(tick, chan, data[0] & (data[1] << 7));
         }));

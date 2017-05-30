@@ -1,7 +1,7 @@
 /*
  * This file is part of UnplannedDescent, licensed under the MIT License (MIT).
  *
- * Copyright (c) TechShroom Studios <https://techshoom.com>
+ * Copyright (c) TechShroom Studios <https://techshroom.com>
  * Copyright (c) contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -44,6 +44,7 @@ public class MidiPlayer {
     private final Set<Object> midiEventListeners = Sets.newIdentityHashSet();
     private volatile MidiFile midiFile;
     private MidiSoundPlayer sounds = MidiSoundPlayer.getDefault();
+    private volatile boolean looping;
 
     public void setSounds(MidiSoundPlayer sounds) {
         this.sounds = sounds;
@@ -52,13 +53,17 @@ public class MidiPlayer {
     public MidiSoundPlayer getSounds() {
         return sounds;
     }
-    
+
     public void addMidiEventListener(Object object) {
         midiEventListeners.add(object);
     }
-    
+
     public void removeMidiEventListener(Object object) {
         midiEventListeners.remove(object);
+    }
+
+    public void setLooping(boolean looping) {
+        this.looping = looping;
     }
 
     public void play(MidiFile file) {
@@ -98,6 +103,12 @@ public class MidiPlayer {
                 }
                 if (next != null && trackToIncrement != -1) {
                     indexes[trackToIncrement]++;
+                }
+                if (next == null && looping) {
+                    // play same file
+                    if (midiFile != null) {
+                        play(midiFile);
+                    }
                 }
                 return next == null ? endOfData() : next;
             }
