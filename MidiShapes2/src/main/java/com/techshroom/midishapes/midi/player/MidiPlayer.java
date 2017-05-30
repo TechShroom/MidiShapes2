@@ -24,11 +24,18 @@
  */
 package com.techshroom.midishapes.midi.player;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
+import javax.inject.Inject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Sets;
@@ -40,11 +47,19 @@ import com.techshroom.midishapes.midi.event.MidiEvent;
  */
 public class MidiPlayer {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(MidiPlayer.class);
+
+    private final ScheduledExecutorService pool;
     private final MidiEngine engine = new MidiEngine();
-    private final Set<Object> midiEventListeners = Sets.newIdentityHashSet();
+    private final Set<Object> midiEventListeners = Collections.synchronizedSet(Sets.newIdentityHashSet());
     private volatile MidiFile midiFile;
-    private MidiSoundPlayer sounds = MidiSoundPlayer.getDefault();
+    private volatile MidiSoundPlayer sounds = MidiSoundPlayer.getDefault();
     private volatile boolean looping;
+
+    @Inject
+    MidiPlayer(ScheduledExecutorService pool) {
+        this.pool = pool;
+    }
 
     public void setSounds(MidiSoundPlayer sounds) {
         this.sounds = sounds;
@@ -63,6 +78,7 @@ public class MidiPlayer {
     }
 
     public void setLooping(boolean looping) {
+        LOGGER.debug("Looping = {}", looping);
         this.looping = looping;
     }
 
@@ -105,10 +121,12 @@ public class MidiPlayer {
                     indexes[trackToIncrement]++;
                 }
                 if (next == null && looping) {
-                    // play same file
-                    if (midiFile != null) {
-                        play(midiFile);
-                    }
+                    // play same file after 2 seconds
+                    pool.schedule(() -> {
+                        if (midiFile != null) {
+                            play(midiFile);
+                        }
+                    }, 2, TimeUnit.SECONDS);
                 }
                 return next == null ? endOfData() : next;
             }

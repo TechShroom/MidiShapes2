@@ -27,6 +27,7 @@ package com.techshroom.midishapes.view;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 
 import com.google.common.eventbus.Subscribe;
+import com.techshroom.midishapes.midi.event.StopEvent;
 import com.techshroom.midishapes.midi.event.channel.AllNotesOffEvent;
 import com.techshroom.midishapes.midi.event.channel.NoteOffEvent;
 import com.techshroom.midishapes.midi.event.channel.NoteOnEvent;
@@ -75,6 +76,11 @@ class PianoView {
         for (int i = 0; i < PIANO_SIZE; i++) {
             keys.set(i, 0);
         }
+    }
+
+    @Subscribe
+    public void stop(StopEvent event) {
+        reset();
     }
 
     public void reset() {

@@ -24,6 +24,8 @@
  */
 package com.techshroom.midishapes.midi.player;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -38,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.eventbus.EventBus;
 import com.techshroom.midishapes.midi.MidiTiming;
 import com.techshroom.midishapes.midi.event.MidiEvent;
+import com.techshroom.midishapes.midi.event.StopEvent;
 
 class MidiEngine implements Runnable {
 
@@ -60,6 +63,7 @@ class MidiEngine implements Runnable {
     }
 
     void start(MidiTiming timing, MidiSoundPlayer sounds, Iterator<MidiEvent> stream, Set<Object> listeners) {
+        checkState(thread.isAlive(), "CRITICAL ERROR, MidiEngine thread is DEAD!");
         this.midiEventListeners.set(listeners);
         EventBus eventBus = new EventBus("midi-engine");
         listeners.forEach(eventBus::register);
@@ -73,6 +77,9 @@ class MidiEngine implements Runnable {
     void stop() {
         Set<Object> listeners = midiEventListeners.get();
         EventBus eventBus = events.get();
+        if (eventBus != null) {
+            eventBus.post(StopEvent.INSTANCE);
+        }
         if (listeners != null && eventBus != null) {
             listeners.forEach(eventBus::unregister);
         }
@@ -109,7 +116,15 @@ class MidiEngine implements Runnable {
             runningLock.writeLock().lock();
             try {
                 while (!this.running) {
-                    runningCondition.await();
+                    try {
+                        runningCondition.await();
+                    } catch (InterruptedException e) {
+                        if (!this.running) {
+                            // standard stop procedures
+                            continue;
+                        }
+                        throw e;
+                    }
                 }
             } finally {
                 runningLock.writeLock().unlock();
@@ -167,6 +182,13 @@ class MidiEngine implements Runnable {
                 waitForEvent(next.getTick(), timing, startMillis);
                 checkIfShouldReturn();
                 state.onEvent(next);
+            }
+            
+            // wait for a second before closing, in case there is any echo, etc. left over after all notes
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
         }
     }

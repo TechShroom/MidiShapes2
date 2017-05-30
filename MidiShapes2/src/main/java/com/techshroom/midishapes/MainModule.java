@@ -26,6 +26,7 @@ package com.techshroom.midishapes;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import javax.inject.Singleton;
 
@@ -66,11 +67,14 @@ public class MainModule extends AbstractModule {
         bind(MidiScreenModel.class).in(Scopes.SINGLETON);
         bind(MidiScreenView.class).in(Scopes.SINGLETON);
         bind(MidiPlayer.class).in(Scopes.SINGLETON);
+        ScheduledExecutorService pool = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors(), new ThreadFactoryBuilder()
+                .setDaemon(true)
+                .setNameFormat("task-pool-%d")
+                .build());
         bind(ExecutorService.class)
-                .toInstance(Executors.newCachedThreadPool(new ThreadFactoryBuilder()
-                        .setDaemon(true)
-                        .setNameFormat("task-pool-%d")
-                        .build()));
+                .toInstance(pool);
+        bind(ScheduledExecutorService.class)
+                .toInstance(pool);
     }
 
     @Provides

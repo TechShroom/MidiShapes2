@@ -26,10 +26,6 @@ package com.techshroom.midishapes.midi.player;
 
 import static com.google.common.base.Preconditions.checkState;
 
-import java.util.Arrays;
-
-import javax.sound.midi.MidiDevice.Info;
-import javax.sound.midi.MidiDeviceReceiver;
 import javax.sound.midi.MidiMessage;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.MidiUnavailableException;
@@ -60,14 +56,8 @@ final class JavaxSoundPlayer implements MidiSoundPlayer {
     @Override
     public JavaxSoundPlayer open() {
         try {
-            System.err.println(Arrays.toString(MidiSystem.getMidiDeviceInfo()));
             target = MidiSystem.getReceiver();
             enc = MidiEventEncoder.getInstance();
-            MidiDeviceReceiver r = (MidiDeviceReceiver) target;
-            Info info = r.getMidiDevice().getDeviceInfo();
-            System.err.println(info.getName());
-            System.err.println(info.getDescription());
-            System.err.println(info.getVendor());
         } catch (MidiUnavailableException e) {
             throw new RuntimeException(e);
         }

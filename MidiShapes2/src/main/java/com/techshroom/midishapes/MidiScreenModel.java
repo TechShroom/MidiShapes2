@@ -31,7 +31,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import javax.inject.Inject;
 
@@ -40,7 +39,6 @@ import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryUtil;
 
 import com.google.common.eventbus.Subscribe;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.techshroom.midishapes.midi.MidiFile;
 import com.techshroom.midishapes.midi.MidiFileLoader;
 import com.techshroom.midishapes.midi.player.MidiPlayer;
@@ -69,15 +67,15 @@ public class MidiScreenModel implements LifecycleObject {
         midiFileFilter.put(0, MemoryUtil.memUTF8("*.mid"));
         midiFileFilter.put(1, MemoryUtil.memUTF8("*.midi"));
     }
-    private static final ExecutorService POOL = Executors.newCachedThreadPool(
-            new ThreadFactoryBuilder().setDaemon(true).setNameFormat("model-workers-%d").build());
 
+    private final ExecutorService pool;
     private final Window window;
     private final MidiPlayer player;
     private volatile Path openFileTransfer;
 
     @Inject
-    MidiScreenModel(Window window, MidiPlayer player) {
+    MidiScreenModel(ExecutorService pool, Window window, MidiPlayer player) {
+        this.pool = pool;
         this.window = window;
         this.player = player;
     }
@@ -154,7 +152,7 @@ public class MidiScreenModel implements LifecycleObject {
     @Subscribe
     public void onKey(KeyStateEvent event) {
         if (event.is(Key.O, KeyState.RELEASED)) {
-            POOL.submit(() -> {
+            pool.submit(() -> {
                 String file = tinyfd_openFileDialog("Pick a MIDI File", defaultOpenFolder, midiFileFilter, "MIDI Files", false);
                 if (file != null) {
                     openFileTransfer = Paths.get(file);

@@ -314,6 +314,33 @@ public class MidiFileLoader {
                     } finally {
                         popLength();
                     }
+                } else if (0xF0 <= status && status < 0xFF) {
+                    switch (status) {
+                        case 0xF0:
+                        case 0xF7:
+                            // sysex, read & ignore
+                            int len = readVarInt("length");
+                            // basically drains section w/ length (due to popLength)
+                            pushLength(len);
+                            popLength();
+                            event = null;
+                            break;
+                        case 0xF2:
+                            // Song Position Pointer -- ignore for now
+                            readByte("spp-lsb");
+                            readByte("spp-msb");
+                            event = null;
+                            break;
+                        case 0xF3:
+                            // song select -- ignore
+                            readByte("song");
+                            event = null;
+                            break;
+                        default:
+                            // misc system related stuff, ignore it
+                            event = null;
+                            break;
+                    }
                 } else {
                     Entry<Integer, MidiEventConstructor> cons = eventCreators.get(status);
                     checkState(cons != null, "unexpected status code %s", Integer.toHexString(status));
