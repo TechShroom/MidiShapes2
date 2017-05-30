@@ -25,6 +25,7 @@
 package com.techshroom.midishapes.midi;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -37,7 +38,6 @@ import java.util.Arrays;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.Map.Entry;
-import java.util.OptionalInt;
 
 import javax.annotation.Nullable;
 import javax.sound.midi.Sequence;
@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableRangeMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
@@ -55,6 +56,7 @@ import com.google.common.io.CharStreams;
 import com.techshroom.midishapes.midi.event.MidiEvent;
 import com.techshroom.midishapes.midi.event.channel.AllNotesOffEvent;
 import com.techshroom.midishapes.midi.event.channel.ChannelAftertouchEvent;
+import com.techshroom.midishapes.midi.event.channel.ControllerEvent;
 import com.techshroom.midishapes.midi.event.channel.NoteAftertouchEvent;
 import com.techshroom.midishapes.midi.event.channel.NoteOffEvent;
 import com.techshroom.midishapes.midi.event.channel.NoteOnEvent;
@@ -116,7 +118,7 @@ public class MidiFileLoader {
             }
 
             for (int i = 0; i < tracks; i++) {
-                loadTrackChunk();
+                loadTrackChunk(i);
             }
         } finally {
             if (!inputs.isEmpty()) {
@@ -126,7 +128,15 @@ public class MidiFileLoader {
 
         ImmutableList<MidiTrack> tracks = trackList.build();
         checkState(tracks.size() == this.tracks, "loaded wrong number of tracks, somehow?");
-        return MidiFile.of(source, midiType, tracks, MidiTiming.calculate(timeEncoding, tracks.get(0)));
+        // scan for channels in parallel
+        ImmutableSet<Integer> channels = tracks.stream()
+                .flatMap(mt -> mt.getEvents().stream())
+                .mapToInt(MidiEvent::getChannel)
+                .distinct()
+                .boxed()
+                .parallel()
+                .collect(toImmutableSet());
+        return MidiFile.of(source, midiType, channels, tracks, MidiTiming.calculate(timeEncoding, tracks.get(0)));
     }
 
     // assumptions made here
@@ -179,7 +189,7 @@ public class MidiFileLoader {
     private interface MidiEventConstructor {
 
         @Nullable
-        MidiEvent construct(int tick, OptionalInt activeChannel, int[] data) throws IOException;
+        MidiEvent construct(int tick, int activeChannel, int[] data) throws IOException;
 
     }
 
@@ -190,33 +200,33 @@ public class MidiFileLoader {
 
         // channel messages
         b.put(Range.closedOpen(0x80, 0x8F), Maps.immutableEntry(2, (tick, chan, data) -> {
-            return NoteOffEvent.create(tick, chan.getAsInt(), data[0], data[1]);
+            return NoteOffEvent.create(tick, chan, data[0], data[1]);
         }));
         b.put(Range.closedOpen(0x90, 0x9F), Maps.immutableEntry(2, (tick, chan, data) -> {
-            return NoteOnEvent.create(tick, chan.getAsInt(), data[0], data[1]);
+            return NoteOnEvent.create(tick, chan, data[0], data[1]);
         }));
         b.put(Range.closedOpen(0xA0, 0xAF), Maps.immutableEntry(2, (tick, chan, data) -> {
-            return NoteAftertouchEvent.create(tick, chan.getAsInt(), data[0], data[1]);
+            return NoteAftertouchEvent.create(tick, chan, data[0], data[1]);
         }));
         b.put(Range.closedOpen(0xB0, 0xBF), Maps.immutableEntry(2, (tick, chan, data) -> {
             return controlChange(tick, chan, data[0], data[1]);
         }));
         b.put(Range.closedOpen(0xC0, 0xCF), Maps.immutableEntry(1, (tick, chan, data) -> {
-            return ProgramChangeEvent.create(tick, chan.getAsInt(), data[0]);
+            return ProgramChangeEvent.create(tick, chan, data[0]);
         }));
         b.put(Range.closedOpen(0xD0, 0xDF), Maps.immutableEntry(1, (tick, chan, data) -> {
-            return ChannelAftertouchEvent.create(tick, chan.getAsInt(), data[0]);
+            return ChannelAftertouchEvent.create(tick, chan, data[0]);
         }));
         b.put(Range.closedOpen(0xE0, 0xEF), Maps.immutableEntry(2, (tick, chan, data) -> {
             // yes, 7, each value is only 7 bits of data
-            return PitchBendEvent.create(tick, chan.getAsInt(), data[0] & (data[1] << 7));
+            return PitchBendEvent.create(tick, chan, data[0] & (data[1] << 7));
         }));
 
         eventCreators = b.build();
     }
 
     @Nullable
-    private static MidiEvent controlChange(int tick, OptionalInt chan, int data1, int data2) {
+    private static MidiEvent controlChange(int tick, int chan, int data1, int data2) {
         // I have no clue what * Mode Off is, they all cause AllNotesOffEvent
         // anyways...
         switch (data1) {
@@ -225,13 +235,13 @@ public class MidiFileLoader {
             case 125:
             case 126:
             case 127:
-                return AllNotesOffEvent.create(tick, chan.getAsInt());
+                return AllNotesOffEvent.create(tick, chan);
             default:
-                return null;
+                return ControllerEvent.create(tick, chan, data1, data2);
         }
     }
 
-    private void loadTrackChunk() throws IOException {
+    private void loadTrackChunk(int track) throws IOException {
         ImmutableList.Builder<MidiEvent> events = ImmutableList.builder();
         readAndCheckTag("track", TRACK_TAG);
         int length = readInt("length");
@@ -239,7 +249,7 @@ public class MidiFileLoader {
         try {
 
             int absTick = 0;
-            int activeChannel = -1;
+            int activeChannel = track;
             int data1 = -1;
             int status = 0;
             while (true) {
@@ -291,7 +301,6 @@ public class MidiFileLoader {
                         }
                 }
 
-                OptionalInt channel = activeChannel == -1 ? OptionalInt.empty() : OptionalInt.of(activeChannel);
                 MidiEvent event;
                 // special cases
                 if (status == 0xFF) {
@@ -299,7 +308,7 @@ public class MidiFileLoader {
                     int len = readVarInt("length");
                     pushLength(len);
                     try {
-                        event = metaEvent(absTick, channel, data1);
+                        event = metaEvent(absTick, activeChannel, data1);
                     } finally {
                         popLength();
                     }
@@ -313,7 +322,7 @@ public class MidiFileLoader {
                     if (dataBytes == 2) {
                         data[1] = readUnsigned("data2");
                     }
-                    event = cons.getValue().construct(absTick, channel, data);
+                    event = cons.getValue().construct(absTick, activeChannel, data);
                 }
                 if (event instanceof EndOfTrackEvent) {
                     // don't record EOT in the track, it's quite obvious...
@@ -330,7 +339,7 @@ public class MidiFileLoader {
     }
 
     @Nullable
-    private MidiEvent metaEvent(int tick, OptionalInt channel, int id) throws IOException {
+    private MidiEvent metaEvent(int tick, int channel, int id) throws IOException {
         switch (id) {
             case 0x00:
                 return SequenceNumberEvent.create(tick, channel, readShort("sequence number"));

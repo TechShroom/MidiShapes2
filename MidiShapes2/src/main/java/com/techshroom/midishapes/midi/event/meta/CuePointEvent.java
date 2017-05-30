@@ -24,15 +24,13 @@
  */
 package com.techshroom.midishapes.midi.event.meta;
 
-import java.util.OptionalInt;
-
 import com.google.auto.value.AutoValue;
 import com.techshroom.midishapes.midi.event.MidiEvent;
 
 @AutoValue
 public abstract class CuePointEvent implements MidiEvent {
 
-    public static CuePointEvent create(int tick, OptionalInt channel, String cue) {
+    public static CuePointEvent create(int tick, int channel, String cue) {
         return new AutoValue_CuePointEvent(tick, channel, cue);
     }
 

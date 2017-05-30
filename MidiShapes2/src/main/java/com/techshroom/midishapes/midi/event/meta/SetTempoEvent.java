@@ -24,7 +24,6 @@
  */
 package com.techshroom.midishapes.midi.event.meta;
 
-import java.util.OptionalInt;
 import java.util.concurrent.TimeUnit;
 
 import com.google.auto.value.AutoValue;
@@ -36,15 +35,15 @@ public abstract class SetTempoEvent implements MidiEvent {
 
     public static final long MICROSECONDS_PER_MINUTE = TimeUnit.MINUTES.toMicros(1);
 
-    public static SetTempoEvent createBpm(int tick, double bpm) {
+    public static SetTempoEvent createBpm(int tick, int channel, double bpm) {
         // have bpm == beats per minute
         // have MPM == micros per minute
         // want: micros per beat
         // MPM / bpm == (u/m)*(m/b) == (u/b)
-        return create(tick, OptionalInt.empty(), (int) (MICROSECONDS_PER_MINUTE / bpm));
+        return create(tick, channel, (int) (MICROSECONDS_PER_MINUTE / bpm));
     }
 
-    public static SetTempoEvent create(int tick, OptionalInt channel, int tempo) {
+    public static SetTempoEvent create(int tick, int channel, int tempo) {
         return new AutoValue_SetTempoEvent(tick, channel, tempo);
     }
 

@@ -24,8 +24,6 @@
  */
 package com.techshroom.midishapes.midi.event;
 
-import java.util.OptionalInt;
-
 public interface MidiEvent {
 
     /**
@@ -34,8 +32,9 @@ public interface MidiEvent {
     int getTick();
 
     /**
-     * Channel this event is on, if set.
+     * Channel this event occurred on. Defaults to the track it occurred on if
+     * the channel was not specified.
      */
-    OptionalInt getChannel();
+    int getChannel();
 
 }

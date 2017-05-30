@@ -24,16 +24,13 @@
  */
 package com.techshroom.midishapes.midi.event.channel;
 
-import java.util.OptionalInt;
-
 import com.google.auto.value.AutoValue;
-import com.techshroom.midishapes.midi.event.MidiEvent;
 
 @AutoValue
-public abstract class NoteOnEvent implements MidiEvent {
+public abstract class NoteOnEvent implements ChannelEvent {
 
     public static NoteOnEvent create(int tick, int channel, int note, int velocity) {
-        return new AutoValue_NoteOnEvent(tick, OptionalInt.of(channel), note, velocity);
+        return new AutoValue_NoteOnEvent(tick, channel, note, velocity);
     }
 
     NoteOnEvent() {

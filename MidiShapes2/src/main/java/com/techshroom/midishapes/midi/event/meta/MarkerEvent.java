@@ -24,15 +24,13 @@
  */
 package com.techshroom.midishapes.midi.event.meta;
 
-import java.util.OptionalInt;
-
 import com.google.auto.value.AutoValue;
 import com.techshroom.midishapes.midi.event.MidiEvent;
 
 @AutoValue
 public abstract class MarkerEvent implements MidiEvent {
 
-    public static MarkerEvent create(int tick, OptionalInt channel, String marker) {
+    public static MarkerEvent create(int tick, int channel, String marker) {
         return new AutoValue_MarkerEvent(tick, channel, marker);
     }
 

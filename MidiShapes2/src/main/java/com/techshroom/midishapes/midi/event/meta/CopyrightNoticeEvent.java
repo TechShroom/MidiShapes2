@@ -24,15 +24,13 @@
  */
 package com.techshroom.midishapes.midi.event.meta;
 
-import java.util.OptionalInt;
-
 import com.google.auto.value.AutoValue;
 import com.techshroom.midishapes.midi.event.MidiEvent;
 
 @AutoValue
 public abstract class CopyrightNoticeEvent implements MidiEvent {
 
-    public static CopyrightNoticeEvent create(int tick, OptionalInt channel, String copyrightNotice) {
+    public static CopyrightNoticeEvent create(int tick, int channel, String copyrightNotice) {
         return new AutoValue_CopyrightNoticeEvent(tick, channel, copyrightNotice);
     }
 

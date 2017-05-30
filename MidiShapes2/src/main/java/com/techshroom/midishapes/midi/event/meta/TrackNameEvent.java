@@ -24,15 +24,13 @@
  */
 package com.techshroom.midishapes.midi.event.meta;
 
-import java.util.OptionalInt;
-
 import com.google.auto.value.AutoValue;
 import com.techshroom.midishapes.midi.event.MidiEvent;
 
 @AutoValue
 public abstract class TrackNameEvent implements MidiEvent {
 
-    public static TrackNameEvent create(int tick, OptionalInt channel, String name) {
+    public static TrackNameEvent create(int tick, int channel, String name) {
         return new AutoValue_TrackNameEvent(tick, channel, name);
     }
 

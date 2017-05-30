@@ -38,6 +38,8 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.matcher.Matchers;
 import com.google.inject.spi.ProvisionListener;
+import com.techshroom.midishapes.midi.player.MidiPlayer;
+import com.techshroom.midishapes.view.MidiScreenView;
 import com.techshroom.unplanned.blitter.GraphicsContext;
 import com.techshroom.unplanned.event.Event;
 import com.techshroom.unplanned.input.Keyboard;
@@ -63,6 +65,7 @@ public class MainModule extends AbstractModule {
         // to explicitly register for events
         bind(MidiScreenModel.class).in(Scopes.SINGLETON);
         bind(MidiScreenView.class).in(Scopes.SINGLETON);
+        bind(MidiPlayer.class).in(Scopes.SINGLETON);
         bind(ExecutorService.class)
                 .toInstance(Executors.newCachedThreadPool(new ThreadFactoryBuilder()
                         .setDaemon(true)

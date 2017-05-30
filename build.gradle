@@ -104,7 +104,12 @@ subprojects {
 
         compile group: 'com.techshroom', name: 'jsr305-plus', version: '0.0.1'
 
-        compile group: 'com.google.inject', name: 'guice', version: '4.1.0'
+        def guice = [group: 'com.google.inject', name: 'guice', version: '4.1.0']
+        if (project.findProperty("debugging")) {
+            println "Using no_aop guice for debugging!"
+            guice.put('classifier', 'no_aop')
+        }
+        compile guice
 
         compile group: 'com.squareup', name: 'javapoet', version: '1.8.0'
 

@@ -59,7 +59,7 @@ public class MidiTiming {
         // check if we need a fake 120 BPM to start
         if (tempoEvents.isEmpty() || tempoEvents.get(0).getTick() == 0) {
             // no tempo events OR no zero tick event
-            prev = SetTempoEvent.createBpm(0, 120);
+            prev = SetTempoEvent.createBpm(0, 0, 120);
         } else {
             // zero tick event
             prev = tempoEvents.get(0);
@@ -72,7 +72,7 @@ public class MidiTiming {
             if (event.getTick() == latestTick) {
                 return;
             }
-            tempoCalculators.put(Range.closedOpen(event.getTick(), latestTick),
+            tempoCalculators.put(Range.openClosed(event.getTick(), latestTick),
                     new OffsetTempoCalculator(currentMicrosOffset[0], timeEncoding, event));
         };
         for (SetTempoEvent event : tempoEvents) {
@@ -124,6 +124,9 @@ public class MidiTiming {
      * @return the millisecond offset from the start of the track
      */
     public long getMillisecondOffset(int tick) {
+        if (tick == 0) {
+            return 0;
+        }
         return TimeUnit.MICROSECONDS.toMillis(tempoCalculators.get(tick).getMicrosecondOffset(tick));
     }
 

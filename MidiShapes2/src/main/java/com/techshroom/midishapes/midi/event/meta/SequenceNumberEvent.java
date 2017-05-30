@@ -24,15 +24,13 @@
  */
 package com.techshroom.midishapes.midi.event.meta;
 
-import java.util.OptionalInt;
-
 import com.google.auto.value.AutoValue;
 import com.techshroom.midishapes.midi.event.MidiEvent;
 
 @AutoValue
 public abstract class SequenceNumberEvent implements MidiEvent {
 
-    public static SequenceNumberEvent create(int tick, OptionalInt channel, int seqNum) {
+    public static SequenceNumberEvent create(int tick, int channel, int seqNum) {
         return new AutoValue_SequenceNumberEvent(tick, channel, seqNum);
     }
 

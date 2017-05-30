@@ -22,33 +22,65 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.midishapes.midi.player;
+package com.techshroom.midishapes.view;
 
+import java.util.concurrent.atomic.AtomicIntegerArray;
+
+import com.google.common.eventbus.Subscribe;
 import com.techshroom.midishapes.midi.event.channel.AllNotesOffEvent;
 import com.techshroom.midishapes.midi.event.channel.NoteOffEvent;
 import com.techshroom.midishapes.midi.event.channel.NoteOnEvent;
-import com.techshroom.midishapes.midi.event.channel.PitchBendEvent;
-import com.techshroom.midishapes.midi.event.channel.ProgramChangeEvent;
 
-public interface MidiSoundPlayer extends AutoCloseable {
+/**
+ * Holds state for rendering each piano.
+ */
+class PianoView {
 
-    static MidiSoundPlayer getDefault() {
-        return JavaxSoundPlayer.getInstance();
+    private static final int PIANO_SIZE = 128;
+
+    private final AtomicIntegerArray keys = new AtomicIntegerArray(PIANO_SIZE);
+
+    private final int channel;
+
+    PianoView(int channel) {
+        this.channel = channel;
     }
 
-    MidiSoundPlayer open();
+    public boolean isDown(int key) {
+        return getVelocity(key) != 0;
+    }
 
-    @Override
-    void close();
+    public int getVelocity(int key) {
+        return keys.get(key);
+    }
 
-    void changeProgram(ProgramChangeEvent event);
+    @Subscribe
+    public void noteOn(NoteOnEvent event) {
+        if (event.getChannel() != channel) {
+            return;
+        }
+        keys.set(event.getNote(), event.getVelocity());
+    }
 
-    void noteOn(NoteOnEvent event);
+    @Subscribe
+    public void noteOff(NoteOffEvent event) {
+        if (event.getChannel() != channel) {
+            return;
+        }
+        keys.set(event.getNote(), 0);
+    }
 
-    void noteOff(NoteOffEvent event);
+    @Subscribe
+    public void allOff(AllNotesOffEvent event) {
+        for (int i = 0; i < PIANO_SIZE; i++) {
+            keys.set(i, 0);
+        }
+    }
 
-    void allNotesOff(AllNotesOffEvent event);
-
-    void pitchBend(PitchBendEvent event);
+    public void reset() {
+        for (int i = 0; i < PIANO_SIZE; i++) {
+            keys.set(i, 0);
+        }
+    }
 
 }

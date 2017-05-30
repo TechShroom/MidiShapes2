@@ -26,6 +26,7 @@ package com.techshroom.midishapes;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.techshroom.midishapes.view.MidiScreenView;
 import com.techshroom.unplanned.blitter.GraphicsContext;
 import com.techshroom.unplanned.window.Window;
 
@@ -38,7 +39,8 @@ public class MidiShapes {
         GraphicsContext ctx = inject.getInstance(GraphicsContext.class);
         ctx.makeActiveContext();
 
-        inject.getInstance(MidiScreenModel.class).initialize();
+        MidiScreenModel model = inject.getInstance(MidiScreenModel.class);
+        model.initialize();
         MidiScreenView screen = inject.getInstance(MidiScreenView.class);
         screen.initialize();
 
@@ -49,11 +51,13 @@ public class MidiShapes {
             window.processEvents();
             ctx.clearGraphicsState();
 
+            model.mainLoop();
             screen.draw();
 
             ctx.swapBuffers();
         }
 
+        screen.destroy();
         window.destroy();
     }
 

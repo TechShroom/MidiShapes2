@@ -30,6 +30,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javax.inject.Inject;
 
@@ -38,8 +40,10 @@ import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryUtil;
 
 import com.google.common.eventbus.Subscribe;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.techshroom.midishapes.midi.MidiFile;
 import com.techshroom.midishapes.midi.MidiFileLoader;
+import com.techshroom.midishapes.midi.player.MidiPlayer;
 import com.techshroom.unplanned.core.util.LifecycleObject;
 import com.techshroom.unplanned.event.keyboard.KeyState;
 import com.techshroom.unplanned.event.keyboard.KeyStateEvent;
@@ -57,18 +61,23 @@ public class MidiScreenModel implements LifecycleObject {
 
     // trailing slash is IMPORTANT -- it opens it to the folder rather than the
     // parent
-    private static final String defaultOpenFolder = Paths.get(System.getProperty("user.home")).toAbsolutePath().toString() + "/";
+    private static String defaultOpenFolder = Paths.get(System.getProperty("user.home")).toAbsolutePath().toString() + "/Dropbox/";
     private static final PointerBuffer midiFileFilter = BufferUtils.createPointerBuffer(2);
     static {
         midiFileFilter.put(0, MemoryUtil.memUTF8("*.mid"));
         midiFileFilter.put(1, MemoryUtil.memUTF8("*.midi"));
     }
+    private static final ExecutorService POOL = Executors.newCachedThreadPool(
+            new ThreadFactoryBuilder().setDaemon(true).setNameFormat("model-workers-%d").build());
 
     private final Window window;
+    private final MidiPlayer player;
+    private volatile Path openFileTransfer;
 
     @Inject
-    MidiScreenModel(Window window) {
+    MidiScreenModel(Window window, MidiPlayer player) {
         this.window = window;
+        this.player = player;
     }
 
     @Override
@@ -77,6 +86,13 @@ public class MidiScreenModel implements LifecycleObject {
 
     @Override
     public void destroy() {
+    }
+
+    public void mainLoop() {
+        if (openFileTransfer != null) {
+            setOpenFile(openFileTransfer);
+            openFileTransfer = null;
+        }
     }
 
     // properties of the model
@@ -89,11 +105,14 @@ public class MidiScreenModel implements LifecycleObject {
 
             @Override
             public void invalidated(Observable arg0) {
-                if (openFileProperty.get() == null) {
+                player.stop();
+                Path path = openFileProperty.get();
+                if (path == null) {
                     return;
                 }
+                defaultOpenFolder = path.toString();
                 try {
-                    openMidiFileBinding.set(MidiFileLoader.load(openFileProperty.get()));
+                    openMidiFileBinding.set(MidiFileLoader.load(path));
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
@@ -120,12 +139,21 @@ public class MidiScreenModel implements LifecycleObject {
     @Subscribe
     public void onKey(KeyStateEvent event) {
         if (event.is(Key.O, KeyState.PRESSED)) {
-            String file = tinyfd_openFileDialog("Pick a MIDI File", defaultOpenFolder, midiFileFilter, "MIDI Files", false);
-            if (file != null) {
-                setOpenFile(Paths.get(file));
-            }
+            POOL.submit(() -> {
+                String file = tinyfd_openFileDialog("Pick a MIDI File", defaultOpenFolder, midiFileFilter, "MIDI Files", false);
+                if (file != null) {
+                    openFileTransfer = Paths.get(file);
+                }
+            });
         } else if (event.is(Key.SPACE, KeyState.PRESSED)) {
-            
+            if (this.player.isRunning()) {
+                this.player.stop();
+            } else {
+                MidiFile file = openMidiFileBinding.get();
+                if (file != null) {
+                    this.player.play(file);
+                }
+            }
         } else if (event.is(Key.ESCAPE, KeyState.PRESSED)) {
             window.setCloseRequested(true);
         }

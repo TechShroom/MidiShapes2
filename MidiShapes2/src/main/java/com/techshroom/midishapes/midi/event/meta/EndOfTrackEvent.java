@@ -24,18 +24,16 @@
  */
 package com.techshroom.midishapes.midi.event.meta;
 
-import java.util.OptionalInt;
-
 import com.google.auto.value.AutoValue;
 import com.techshroom.midishapes.midi.event.MidiEvent;
 
 @AutoValue
 public abstract class EndOfTrackEvent implements MidiEvent {
-    
-    public static EndOfTrackEvent create(int tick, OptionalInt channel) {
+
+    public static EndOfTrackEvent create(int tick, int channel) {
         return new AutoValue_EndOfTrackEvent(tick, channel);
     }
-    
+
     EndOfTrackEvent() {
     }
 

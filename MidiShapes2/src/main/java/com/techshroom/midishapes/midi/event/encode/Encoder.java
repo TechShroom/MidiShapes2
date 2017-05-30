@@ -22,32 +22,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.midishapes;
+package com.techshroom.midishapes.midi.event.encode;
 
-import javax.inject.Inject;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.util.function.ToIntFunction;
 
-import com.techshroom.unplanned.blitter.Drawable;
-import com.techshroom.unplanned.core.util.LifecycleObject;
+import com.techshroom.midishapes.midi.event.MidiEvent;
 
-public class MidiScreenView implements Drawable, LifecycleObject {
+interface Encoder<T extends MidiEvent> {
 
-    private final MidiScreenModel model;
-
-    @Inject
-    MidiScreenView(MidiScreenModel model) {
-        this.model = model;
+    static <M extends MidiEvent> Encoder<M> twoByte(int type, ToIntFunction<M> first, ToIntFunction<M> second) {
+        return (event, stream) -> {
+            stream.writeByte(type | event.getChannel());
+            stream.writeByte(first.applyAsInt(event));
+            stream.writeByte(second.applyAsInt(event));
+        };
     }
 
-    @Override
-    public void initialize() {
+    static <M extends MidiEvent> Encoder<M> oneByte(int type, ToIntFunction<M> first) {
+        return (event, stream) -> {
+            stream.writeByte(type | event.getChannel());
+            stream.writeByte(first.applyAsInt(event));
+        };
     }
 
-    @Override
-    public void destroy() {
-    }
-
-    @Override
-    public void draw() {
-    }
+    void encode(T event, DataOutputStream stream) throws IOException;
 
 }

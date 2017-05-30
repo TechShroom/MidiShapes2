@@ -25,17 +25,20 @@
 package com.techshroom.midishapes.midi;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 @AutoValue
 public abstract class MidiFile {
 
-    public static MidiFile of(Path path, MidiType type, List<MidiTrack> tracks, MidiTiming timing) {
+    public static MidiFile of(Path path, MidiType type, Collection<Integer> channels, List<MidiTrack> tracks, MidiTiming timing) {
         switch (type) {
             case SINGLE_TRACK:
                 checkState(tracks.size() == 1, "SINGLE_TRACK requires 1 track");
@@ -45,7 +48,8 @@ public abstract class MidiFile {
                 checkState(tracks.size() > 0, "%s requires at least 1 track", type);
                 break;
         }
-        return new AutoValue_MidiFile(path, type, ImmutableList.copyOf(tracks), timing);
+        ImmutableSet<Integer> sortedChannels = channels.stream().sorted().collect(toImmutableSet());
+        return new AutoValue_MidiFile(path, type, sortedChannels, ImmutableList.copyOf(tracks), timing);
     }
 
     MidiFile() {
@@ -54,6 +58,8 @@ public abstract class MidiFile {
     public abstract Path getPath();
 
     public abstract MidiType getType();
+
+    public abstract ImmutableSet<Integer> getChannels();
 
     public abstract ImmutableList<MidiTrack> getTracks();
 

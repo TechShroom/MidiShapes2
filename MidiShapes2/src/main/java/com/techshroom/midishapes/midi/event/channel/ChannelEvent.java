@@ -24,18 +24,8 @@
  */
 package com.techshroom.midishapes.midi.event.channel;
 
-import com.google.auto.value.AutoValue;
+import com.techshroom.midishapes.midi.event.MidiEvent;
 
-@AutoValue
-public abstract class ProgramChangeEvent implements ChannelEvent {
-
-    public static ProgramChangeEvent create(int tick, int channel, int program) {
-        return new AutoValue_ProgramChangeEvent(tick, channel, program);
-    }
-
-    ProgramChangeEvent() {
-    }
-
-    public abstract int getProgram();
+public interface ChannelEvent extends MidiEvent {
 
 }
