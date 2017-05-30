@@ -26,9 +26,14 @@ package com.techshroom.midishapes.midi.player;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.util.Collections;
+import java.util.Deque;
+import java.util.LinkedList;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.DeadEvent;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
@@ -39,16 +44,47 @@ import com.techshroom.midishapes.midi.event.channel.NoteOffEvent;
 import com.techshroom.midishapes.midi.event.channel.NoteOnEvent;
 import com.techshroom.midishapes.midi.event.channel.PitchBendEvent;
 import com.techshroom.midishapes.midi.event.channel.ProgramChangeEvent;
+import com.techshroom.midishapes.midi.event.meta.InstrumentNameEvent;
 import com.techshroom.midishapes.midi.event.meta.SetTempoEvent;
+import com.techshroom.midishapes.midi.event.meta.TextEvent;
+import com.techshroom.midishapes.midi.event.meta.TrackNameEvent;
 
-class MidiState {
+class MidiEventHandler {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MidiState.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MidiEventHandler.class);
+
+    private static final ImmutableSet<Class<?>> KNOWN_UNUSED = ImmutableSet.of(
+            // tempo is pre-calculated
+            SetTempoEvent.class,
+            // controller events are always unused
+            ControllerEvent.class,
+            // text events we don't consume
+            TextEvent.class, TrackNameEvent.class, InstrumentNameEvent.class);
+
+    private static boolean isKnownUnused(Class<?> c) {
+        Deque<Class<?>> classes = new LinkedList<>();
+        classes.addLast(c);
+        while (!classes.isEmpty()) {
+            Class<?> pop = classes.pop();
+
+            if (KNOWN_UNUSED.contains(pop)) {
+                return true;
+            }
+
+            Class<?> superclass = pop.getSuperclass();
+            if (superclass != null) {
+                classes.add(superclass);
+            }
+            Collections.addAll(classes, pop.getInterfaces());
+        }
+
+        return false;
+    }
 
     private final EventBus events;
     private final MidiSoundPlayer sounds;
 
-    MidiState(MidiSoundPlayer sounds, EventBus events) {
+    MidiEventHandler(MidiSoundPlayer sounds, EventBus events) {
         this.events = checkNotNull(events, "events");
         this.sounds = checkNotNull(sounds, "sounds");
         events.register(this);
@@ -60,17 +96,10 @@ class MidiState {
 
     @Subscribe
     public void deadEvent(DeadEvent event) {
-        LOGGER.warn("Unhandled event " + event.getEvent());
-    }
-
-    @Subscribe
-    public void setTempoUnused(SetTempoEvent event) {
-        // we precalculated timing info already, event is ignored
-    }
-
-    @Subscribe
-    public void controllerEventUnused(ControllerEvent event) {
-        // all ControllerEvents are unused by default
+        Object e = event.getEvent();
+        if (!isKnownUnused(e.getClass())) {
+            LOGGER.warn("Unhandled event {}", e);
+        }
     }
 
     // forwards to sound player

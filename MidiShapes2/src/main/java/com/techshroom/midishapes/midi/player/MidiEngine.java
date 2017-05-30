@@ -173,7 +173,7 @@ class MidiEngine implements Runnable {
             // save stream to improve performance
             final Iterator<MidiEvent> stream = this.stream.get();
             final MidiTiming timing = this.timing.get();
-            final MidiState state = new MidiState(sounds, events.get());
+            final MidiEventHandler state = new MidiEventHandler(sounds, events.get());
             final long startMillis = accurateMilliseconds();
 
             while (stream.hasNext()) {
