@@ -37,16 +37,24 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
 import com.google.inject.matcher.Matchers;
 import com.google.inject.spi.ProvisionListener;
+import com.techshroom.midishapes.midi.player.MidiEventChain;
 import com.techshroom.midishapes.midi.player.MidiPlayer;
+import com.techshroom.midishapes.midi.player.MidiSoundPlayer;
 import com.techshroom.midishapes.view.MidiScreenView;
+import com.techshroom.midishapes.view.ViewComponents;
 import com.techshroom.unplanned.blitter.GraphicsContext;
 import com.techshroom.unplanned.event.Event;
 import com.techshroom.unplanned.input.Keyboard;
 import com.techshroom.unplanned.input.Mouse;
 import com.techshroom.unplanned.window.Window;
 import com.techshroom.unplanned.window.WindowSettings;
+
+import javafx.beans.binding.ObjectBinding;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 
 public class MainModule extends AbstractModule {
 
@@ -67,6 +75,7 @@ public class MainModule extends AbstractModule {
         bind(MidiScreenModel.class).in(Scopes.SINGLETON);
         bind(MidiScreenView.class).in(Scopes.SINGLETON);
         bind(MidiPlayer.class).in(Scopes.SINGLETON);
+        bind(ViewComponents.class).in(Scopes.SINGLETON);
         ScheduledExecutorService pool = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors(), new ThreadFactoryBuilder()
                 .setDaemon(true)
                 .setNameFormat("task-pool-%d")
@@ -75,6 +84,8 @@ public class MainModule extends AbstractModule {
                 .toInstance(pool);
         bind(ScheduledExecutorService.class)
                 .toInstance(pool);
+        bind(new TypeLiteral<ObjectProperty<MidiSoundPlayer>>() {})
+                .toInstance(new SimpleObjectProperty<>(this, "soundPlayer", MidiSoundPlayer.getDefault()));
     }
 
     @Provides
@@ -102,6 +113,28 @@ public class MainModule extends AbstractModule {
     @Singleton
     protected Mouse provideMouse(Window window) {
         return window.getMouse();
+    }
+
+    @Provides
+    @Singleton
+    protected ObjectBinding<MidiEventChain> provideChain(MidiPlayer player, ViewComponents view, ObjectProperty<MidiSoundPlayer> soundPlayer) {
+        return new ObjectBinding<MidiEventChain>() {
+
+            {
+                bind(view.viewEventChainExpression());
+                bind(soundPlayer);
+            }
+
+            @Override
+            protected MidiEventChain computeValue() {
+                return player.chainBuilder()
+                        .async()
+                        .addAll(view.viewEventChainExpression().get())
+                        .add(soundPlayer.get())
+                        .build();
+            }
+
+        };
     }
 
 }

@@ -22,23 +22,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.midishapes.midi.event;
+package com.techshroom.midishapes.midi.player;
 
-import com.techshroom.midishapes.midi.player.MidiPlayer;
+import com.techshroom.midishapes.midi.event.MidiEvent;
 
-/**
- * Sent when the {@link MidiPlayer} stops.
- */
-public enum StopEvent implements MidiEvent {
-    INSTANCE;
+public interface MidiEventChain {
 
-    @Override
-    public int getTick() {
-        return 0;
+    MidiPlayer player();
+
+    MidiEvent currentEvent();
+
+    default void sendCurrentEventToNext() {
+        sendEventToNext(currentEvent());
     }
 
-    @Override
-    public int getChannel() {
-        return 0;
-    }
+    void sendEventToNext(MidiEvent event);
+
 }

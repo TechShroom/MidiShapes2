@@ -24,13 +24,21 @@
  */
 package com.techshroom.midishapes.view;
 
-import java.util.ArrayList;
-import java.util.List;
+import static com.techshroom.midishapes.view.ViewComponents.BLACK_NOTE_HEIGHT;
+import static com.techshroom.midishapes.view.ViewComponents.BLACK_NOTE_LENGTH;
+import static com.techshroom.midishapes.view.ViewComponents.BLACK_NOTE_WIDTH;
+import static com.techshroom.midishapes.view.ViewComponents.OFFSETS;
+import static com.techshroom.midishapes.view.ViewComponents.PIANO_DY;
+import static com.techshroom.midishapes.view.ViewComponents.PIANO_DZ;
+import static com.techshroom.midishapes.view.ViewComponents.PIANO_SIZE;
+import static com.techshroom.midishapes.view.ViewComponents.PIANO_WIDTH;
+import static com.techshroom.midishapes.view.ViewComponents.WHITE_NOTE_HEIGHT;
+import static com.techshroom.midishapes.view.ViewComponents.WHITE_NOTE_LENGTH;
+import static com.techshroom.midishapes.view.ViewComponents.WHITE_NOTE_WIDTH;
+import static com.techshroom.midishapes.view.ViewComponents.isWhiteKey;
 
 import javax.inject.Inject;
 
-import com.flowpowered.math.imaginary.Quaternionf;
-import com.flowpowered.math.matrix.Matrix4f;
 import com.flowpowered.math.vector.Vector2i;
 import com.flowpowered.math.vector.Vector3d;
 import com.flowpowered.math.vector.Vector3f;
@@ -43,6 +51,7 @@ import com.techshroom.unplanned.blitter.Drawable;
 import com.techshroom.unplanned.blitter.GraphicsContext;
 import com.techshroom.unplanned.blitter.binding.Bindable;
 import com.techshroom.unplanned.blitter.binding.BindableDrawable;
+import com.techshroom.unplanned.blitter.matrix.MatrixUploader;
 import com.techshroom.unplanned.blitter.shapers.CubeLayout;
 import com.techshroom.unplanned.blitter.textures.Downscaling;
 import com.techshroom.unplanned.blitter.textures.Texture;
@@ -55,6 +64,7 @@ import com.techshroom.unplanned.blitter.textures.loader.ColorTextureSpec;
 import com.techshroom.unplanned.blitter.textures.loader.StandardTextureLoaders;
 import com.techshroom.unplanned.blitter.textures.map.TextureAtlas;
 import com.techshroom.unplanned.blitter.textures.map.TextureCollection;
+import com.techshroom.unplanned.blitter.transform.TransformStack;
 import com.techshroom.unplanned.core.util.LifecycleObject;
 import com.techshroom.unplanned.event.keyboard.KeyState;
 import com.techshroom.unplanned.event.keyboard.KeyStateEvent;
@@ -64,66 +74,15 @@ import com.techshroom.unplanned.window.Window;
 
 public class MidiScreenView implements Drawable, LifecycleObject {
 
-    private static final int PIANO_SIZE = 128;
-
-    private static final int WHITE_NOTE_WIDTH = 30;
-    private static final int WHITE_NOTE_LENGTH = 30;
-    private static final int WHITE_NOTE_HEIGHT = 150;
-    private static final int BLACK_NOTE_WIDTH = 20;
-    private static final int BLACK_NOTE_LENGTH = 20;
-    private static final int BLACK_NOTE_HEIGHT = 50;
-
-    private static final int PIANO_DY = 75;
-    private static final int PIANO_DZ = -175;
-
-    private static final int SPACING = 5;
-
-    // 7 per octave * 11 octaves - 2 (greater than 127)
-    private static final int WHITE_KEY_COUNT = 77 - 2;
-    private static final int PIANO_WIDTH = (WHITE_NOTE_WIDTH + SPACING) * WHITE_KEY_COUNT;
-
-    private static boolean isWhiteKey(int key) {
-        switch (key % 12) {
-            case 0:
-            case 2:
-            case 4:
-            case 5:
-            case 7:
-            case 9:
-            case 11:
-                return true;
-        }
-        return false;
-    }
-
-    private static final Vector3f[] OFFSETS = new Vector3f[PIANO_SIZE];
-    static {
-        int lastWhiteKey = 0;
-        int whiteKeyCounter = 0;
-        for (int i = 0; i < PIANO_SIZE; i++) {
-            if (isWhiteKey(i)) {
-                lastWhiteKey = whiteKeyCounter * (WHITE_NOTE_WIDTH + SPACING);
-                OFFSETS[i] = new Vector3f(lastWhiteKey, 0, 0);
-                whiteKeyCounter++;
-            } else {
-                // size of the black/white key overlap
-                float overlapSize = (BLACK_NOTE_WIDTH - SPACING);
-                // xOffset is WIDTH - half of overlap
-                float xOffset = WHITE_NOTE_WIDTH - (overlapSize / 2f);
-                OFFSETS[i] = new Vector3f(lastWhiteKey + xOffset, 20, 0);
-            }
-        }
-    }
-
+    private final TransformStack tsPrimary;
     private final Window window;
     private final GraphicsContext ctx;
+    private final MatrixUploader matrixUploader;
     private final MidiScreenModel model;
     private final MidiPlayer player;
-    private final List<PianoView> pianos = new ArrayList<>();
+    private final ViewComponents components;
 
     private Vector3f eulerAngles = new Vector3f(-15, 0, 0);
-    private Matrix4f projection;
-    private Matrix4f view;
     private Texture atlas;
     private BindableShape whiteNote;
     private BindableShape blackNote;
@@ -131,11 +90,14 @@ public class MidiScreenView implements Drawable, LifecycleObject {
     private BindableShape playingBlackNote;
 
     @Inject
-    MidiScreenView(Window window, MidiScreenModel model, MidiPlayer player) {
+    MidiScreenView(Window window, MidiScreenModel model, MidiPlayer player, ViewComponents components) {
         this.window = window;
         this.ctx = window.getGraphicsContext();
+        this.matrixUploader = ctx.getMatrixUploader();
+        this.tsPrimary = ctx.pushTransformer();
         this.model = model;
         this.player = player;
+        this.components = components;
 
         Vector2i size = window.getSize();
         setProjection(size.getX(), size.getY());
@@ -145,12 +107,14 @@ public class MidiScreenView implements Drawable, LifecycleObject {
     @Override
     public void initialize() {
         this.model.openMidiFileProperty().addListener((obs, oldVal, newVal) -> {
-            destroyPianos();
+            destroyViewModels();
 
             for (int channel : newVal.getChannels()) {
                 PianoView piano = new PianoView(channel);
-                pianos.add(piano);
-                this.player.addMidiEventListener(piano);
+                components.pianos.add(piano);
+                ChannelView ch = new ChannelView(channel, ctx, newVal, player);
+                ch.initialize();
+                components.channels.add(ch);
             }
         });
         this.model.loopingProperty().addListener((obs, oldVal, newVal) -> {
@@ -219,26 +183,30 @@ public class MidiScreenView implements Drawable, LifecycleObject {
     }
 
     private void updateViewMatrix() {
-        view = Matrix4f.createTranslation(0, -1500, -3500)
-                .rotate(Quaternionf.fromAxesAnglesDeg(-eulerAngles.getX(), -eulerAngles.getY(), -eulerAngles.getZ()));
+        tsPrimary.camera()
+                .reset()
+                .translate(0, 1000, 2600)
+                .rotate(eulerAngles);
     }
 
     @Override
     public void destroy() {
-        destroyPianos();
+        destroyViewModels();
         this.whiteNote.destroy();
         this.blackNote.destroy();
         this.playingWhiteNote.destroy();
         this.playingBlackNote.destroy();
     }
 
-    private void destroyPianos() {
-        this.pianos.forEach(player::removeMidiEventListener);
-        this.pianos.clear();
+    private void destroyViewModels() {
+        components.channels.forEach(ChannelView::destroy);
+        components.channels.clear();
+        components.pianos.clear();
     }
 
     @Override
     public void draw() {
+        drawChannels();
         try (Bindable texture = this.atlas.bind()) {
             try (BindableDrawable whiteBound = whiteNote.bind()) {
                 drawNotes(whiteBound, true, false);
@@ -260,9 +228,19 @@ public class MidiScreenView implements Drawable, LifecycleObject {
         return new Vector3f(-PIANO_WIDTH / 2f, piano * PIANO_DY, piano * PIANO_DZ);
     }
 
+    private void drawChannels() {
+        for (int i = 0; i < components.channels.size(); i++) {
+            try (TransformStack stack = ctx.pushTransformer()) {
+                stack.model().translate(baseVector(i));
+                // no apply - we know the channels do it themselves
+                components.channels.get(i).draw();
+            }
+        }
+    }
+
     private void drawNotes(BindableDrawable note, boolean drawingWhite, boolean drawDown) {
-        for (int i = 0; i < this.pianos.size(); i++) {
-            PianoView view = this.pianos.get(i);
+        for (int i = 0; i < components.pianos.size(); i++) {
+            PianoView view = components.pianos.get(i);
 
             Vector3f base = baseVector(i);
             for (int key = 0; key < PIANO_SIZE; key++) {
@@ -280,14 +258,13 @@ public class MidiScreenView implements Drawable, LifecycleObject {
                     float pressureMove = (vel / 128f) * 10f;
                     trans = trans.add(0, -pressureMove, 0);
                 }
-                mvp(trans, Quaternionf.IDENTITY);
-                note.drawWithoutBinding();
+                try (TransformStack ts = ctx.pushTransformer()) {
+                    ts.model().translate(trans);
+                    ts.apply(matrixUploader);
+                    note.drawWithoutBinding();
+                }
             }
         }
-    }
-
-    private void mvp(Vector3f translation, Quaternionf rotation) {
-        ctx.getMatrixUploader().upload(Matrix4f.createRotation(rotation).translate(translation), view, projection);
     }
 
     @Subscribe
@@ -296,7 +273,7 @@ public class MidiScreenView implements Drawable, LifecycleObject {
     }
 
     private void setProjection(int width, int height) {
-        this.projection = Matrix4f.createPerspective(40, width / height, 100, -100);
+        tsPrimary.perspective(40, width, height, 100, -100);
     }
 
 }

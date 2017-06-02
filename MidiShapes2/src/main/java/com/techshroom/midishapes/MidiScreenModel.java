@@ -41,6 +41,7 @@ import org.lwjgl.system.MemoryUtil;
 import com.google.common.eventbus.Subscribe;
 import com.techshroom.midishapes.midi.MidiFile;
 import com.techshroom.midishapes.midi.MidiFileLoader;
+import com.techshroom.midishapes.midi.player.MidiEventChain;
 import com.techshroom.midishapes.midi.player.MidiPlayer;
 import com.techshroom.unplanned.core.util.LifecycleObject;
 import com.techshroom.unplanned.event.keyboard.KeyState;
@@ -50,6 +51,7 @@ import com.techshroom.unplanned.window.Window;
 
 import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
+import javafx.beans.binding.ObjectBinding;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
@@ -71,13 +73,15 @@ public class MidiScreenModel implements LifecycleObject {
     private final ExecutorService pool;
     private final Window window;
     private final MidiPlayer player;
+    private final ObjectBinding<MidiEventChain> chain;
     private volatile Path openFileTransfer;
 
     @Inject
-    MidiScreenModel(ExecutorService pool, Window window, MidiPlayer player) {
+    MidiScreenModel(ExecutorService pool, Window window, MidiPlayer player, ObjectBinding<MidiEventChain> chain) {
         this.pool = pool;
         this.window = window;
         this.player = player;
+        this.chain = chain;
     }
 
     @Override
@@ -166,7 +170,7 @@ public class MidiScreenModel implements LifecycleObject {
             } else {
                 MidiFile file = openMidiFileProperty.get();
                 if (file != null) {
-                    this.player.play(file);
+                    this.player.play(file, chain.get());
                 }
             }
         } else if (event.is(Key.ESCAPE, KeyState.RELEASED)) {

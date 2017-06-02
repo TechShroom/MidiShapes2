@@ -43,7 +43,7 @@ import com.techshroom.midishapes.midi.event.meta.SetTempoEvent;
  * MIDI timing is a fun bag of beans!
  */
 public class MidiTiming {
-    
+
     private static final Logger LOGGER = LoggerFactory.getLogger(MidiTiming.class);
 
     /**
@@ -74,14 +74,14 @@ public class MidiTiming {
             tempoEvents.remove(0);
         }
 
-        ImmutableRangeMap.Builder<Integer, OffsetTempoCalculator> tempoCalculators = ImmutableRangeMap.builder();
+        ImmutableRangeMap.Builder<Integer, TickOffsetTempoCalculator> tempoCalculators = ImmutableRangeMap.builder();
         int[] currentMicrosOffset = { 0 };
         ObjIntConsumer<SetTempoEvent> addTC = (event, latestTick) -> {
             if (event.getTick() == latestTick) {
                 return;
             }
             tempoCalculators.put(Range.openClosed(event.getTick(), latestTick),
-                    new OffsetTempoCalculator(currentMicrosOffset[0], timeEncoding, event));
+                    new TickOffsetTempoCalculator(currentMicrosOffset[0], timeEncoding, event));
         };
         for (SetTempoEvent event : tempoEvents) {
             // add previous entry
@@ -98,13 +98,13 @@ public class MidiTiming {
         return new MidiTiming(tempoCalculators.build());
     }
 
-    private static final class OffsetTempoCalculator {
+    private static final class TickOffsetTempoCalculator {
 
         private final int baseMicros;
         private final int microsPerTick;
         private final SetTempoEvent tempoEvent;
 
-        public OffsetTempoCalculator(int baseMicros, MidiTimeEncoding timeEncoding, SetTempoEvent tempoEvent) {
+        public TickOffsetTempoCalculator(int baseMicros, MidiTimeEncoding timeEncoding, SetTempoEvent tempoEvent) {
             this.baseMicros = baseMicros;
             this.microsPerTick = timeEncoding.getMicrosecondsPerTick(tempoEvent.getTempo());
             this.tempoEvent = tempoEvent;
@@ -118,10 +118,10 @@ public class MidiTiming {
 
     }
 
-    private final RangeMap<Integer, OffsetTempoCalculator> tempoCalculators;
+    private final RangeMap<Integer, TickOffsetTempoCalculator> tickCalc;
 
-    private MidiTiming(RangeMap<Integer, OffsetTempoCalculator> tempoCalculators) {
-        this.tempoCalculators = tempoCalculators;
+    private MidiTiming(RangeMap<Integer, TickOffsetTempoCalculator> tempoCalculators) {
+        this.tickCalc = tempoCalculators;
     }
 
     /**
@@ -135,7 +135,7 @@ public class MidiTiming {
         if (tick == 0) {
             return 0;
         }
-        return TimeUnit.MICROSECONDS.toMillis(tempoCalculators.get(tick).getMicrosecondOffset(tick));
+        return TimeUnit.MICROSECONDS.toMillis(tickCalc.get(tick).getMicrosecondOffset(tick));
     }
 
 }

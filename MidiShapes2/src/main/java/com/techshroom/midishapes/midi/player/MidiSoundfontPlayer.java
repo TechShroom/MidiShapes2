@@ -32,16 +32,10 @@ import java.nio.ByteBuffer;
 import org.lwjgl.openal.AL;
 import org.lwjgl.openal.ALC;
 
-import com.techshroom.midishapes.midi.event.channel.AllNotesOffEvent;
-import com.techshroom.midishapes.midi.event.channel.NoteOffEvent;
-import com.techshroom.midishapes.midi.event.channel.NoteOnEvent;
-import com.techshroom.midishapes.midi.event.channel.PitchBendEvent;
-import com.techshroom.midishapes.midi.event.channel.ProgramChangeEvent;
-
 /**
  * Plays sounds using the provided sound font.
  */
-class MidiSoundManager implements MidiSoundPlayer {
+class MidiSoundfontPlayer implements MidiSoundPlayer {
 
     static {
         long dev = alcOpenDevice((ByteBuffer) null);
@@ -49,26 +43,11 @@ class MidiSoundManager implements MidiSoundPlayer {
         AL.createCapabilities(ALC.createCapabilities(dev));
     }
 
-    static MidiSoundManager manangeFont(MidiSoundfont sounds) {
-        return new MidiSoundManager();
+    static MidiSoundfontPlayer manangeFont(MidiSoundfont sounds) {
+        return new MidiSoundfontPlayer();
     }
 
-    private MidiSoundManager() {
-    }
-
-    @Override
-    public void changeProgram(ProgramChangeEvent event) {
-
-    }
-
-    @Override
-    public void noteOn(NoteOnEvent event) {
-
-    }
-
-    @Override
-    public void noteOff(NoteOffEvent event) {
-
+    private MidiSoundfontPlayer() {
     }
 
     @Override
@@ -82,11 +61,8 @@ class MidiSoundManager implements MidiSoundPlayer {
     }
 
     @Override
-    public void allNotesOff(AllNotesOffEvent event) {
-    }
-
-    @Override
-    public void pitchBend(PitchBendEvent event) {
+    public void onEvent(MidiEventChain chain) {
+        chain.sendCurrentEventToNext();
     }
 
 }

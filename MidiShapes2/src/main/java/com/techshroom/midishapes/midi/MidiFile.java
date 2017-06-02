@@ -25,15 +25,20 @@
 package com.techshroom.midishapes.midi;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableListMultimap.toImmutableListMultimap;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
+import java.util.function.Function;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.techshroom.midishapes.midi.event.MidiEvent;
 
 @AutoValue
 public abstract class MidiFile {
@@ -49,7 +54,15 @@ public abstract class MidiFile {
                 break;
         }
         ImmutableSet<Integer> sortedChannels = channels.stream().sorted().collect(toImmutableSet());
-        return new AutoValue_MidiFile(path, type, sortedChannels, ImmutableList.copyOf(tracks), timing);
+        ImmutableList<MidiTrack> tracksCopy = ImmutableList.copyOf(tracks);
+        return new AutoValue_MidiFile(path, type, sortedChannels, tracksCopy, buildCT(tracksCopy), timing);
+    }
+
+    private static ImmutableListMultimap<Integer, MidiEvent> buildCT(List<MidiTrack> tracks) {
+        // sort events by tick then organize by channel
+        return tracks.stream().map(MidiTrack::getEvents).flatMap(List::stream)
+                .sorted(Comparator.comparingInt(MidiEvent::getTick))
+                .collect(toImmutableListMultimap(MidiEvent::getChannel, Function.identity()));
     }
 
     MidiFile() {
@@ -62,6 +75,11 @@ public abstract class MidiFile {
     public abstract ImmutableSet<Integer> getChannels();
 
     public abstract ImmutableList<MidiTrack> getTracks();
+
+    /**
+     * @return tracks as channels
+     */
+    public abstract ImmutableListMultimap<Integer, MidiEvent> getChannelTracks();
 
     public abstract MidiTiming getTimingData();
 

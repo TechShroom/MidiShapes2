@@ -22,23 +22,51 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.midishapes.midi.event;
+package com.techshroom.midishapes.midi.player;
 
-import com.techshroom.midishapes.midi.player.MidiPlayer;
+import com.google.common.collect.ImmutableList;
 
-/**
- * Sent when the {@link MidiPlayer} stops.
- */
-public enum StopEvent implements MidiEvent {
-    INSTANCE;
+public final class MidiEventChainBuilder {
 
-    @Override
-    public int getTick() {
-        return 0;
+    private final MidiPlayer player;
+    private boolean async = false;
+    private final ImmutableList.Builder<MidiEventChainLink> links = ImmutableList.builder();
+
+    MidiEventChainBuilder(MidiPlayer player) {
+        this.player = player;
     }
 
-    @Override
-    public int getChannel() {
-        return 0;
+    public MidiEventChainBuilder async() {
+        return async(true);
     }
+
+    public MidiEventChainBuilder sync() {
+        return async(false);
+    }
+
+    public MidiEventChainBuilder async(boolean async) {
+        this.async = async;
+        return this;
+    }
+
+    public MidiEventChainBuilder add(MidiEventChainLink element) {
+        links.add(element);
+        return this;
+    }
+
+    public MidiEventChainBuilder addAll(Iterable<? extends MidiEventChainLink> elements) {
+        links.addAll(elements);
+        return this;
+    }
+
+    public MidiEventChainBuilder add(MidiEventChainLink... elements) {
+        links.add(elements);
+        return this;
+    }
+
+    public MidiEventChain build() {
+        ImmutableList<MidiEventChainLink> c = links.build();
+        return async ? new AsyncMidiEventChain(player, c) : new SyncMidiEventChain(player, c);
+    }
+
 }

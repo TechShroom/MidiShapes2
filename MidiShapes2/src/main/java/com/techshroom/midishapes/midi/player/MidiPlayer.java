@@ -24,10 +24,10 @@
  */
 package com.techshroom.midishapes.midi.player;
 
-import java.util.Collections;
+import static com.google.common.base.Preconditions.checkState;
+
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -38,9 +38,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.Sets;
 import com.techshroom.midishapes.midi.MidiFile;
 import com.techshroom.midishapes.midi.event.MidiEvent;
+
+import javafx.beans.property.ObjectProperty;
 
 /**
  * Asynchronous MIDI file player.
@@ -51,42 +52,48 @@ public class MidiPlayer {
 
     private final ScheduledExecutorService pool;
     private final MidiEngine engine = new MidiEngine();
-    private final Set<Object> midiEventListeners = Collections.synchronizedSet(Sets.newIdentityHashSet());
+    private final ObjectProperty<MidiSoundPlayer> soundPlayer;
     private volatile MidiFile midiFile;
-    private volatile MidiSoundPlayer sounds = MidiSoundPlayer.getDefault();
+    private volatile MidiEventChain chain;
     private volatile boolean looping;
 
     @Inject
-    MidiPlayer(ScheduledExecutorService pool) {
+    MidiPlayer(ScheduledExecutorService pool, ObjectProperty<MidiSoundPlayer> soundPlayer) {
         this.pool = pool;
+        this.soundPlayer = soundPlayer;
     }
 
-    public void setSounds(MidiSoundPlayer sounds) {
-        this.sounds = sounds;
+    public MidiEventChainBuilder chainBuilder() {
+        return new MidiEventChainBuilder(this);
     }
-
-    public MidiSoundPlayer getSounds() {
-        return sounds;
-    }
-
-    public void addMidiEventListener(Object object) {
-        midiEventListeners.add(object);
-    }
-
-    public void removeMidiEventListener(Object object) {
-        midiEventListeners.remove(object);
-    }
-
+    
     public void setLooping(boolean looping) {
         LOGGER.debug("Looping = {}", looping);
         this.looping = looping;
     }
 
-    public void play(MidiFile file) {
+    public void play(MidiFile file, MidiEventChain chain) {
         stop();
 
         midiFile = file;
-        engine.start(file.getTimingData(), sounds, reduceTracks(file), midiEventListeners);
+        this.chain = chain;
+        soundPlayer.get().open();
+        engine.start(file.getTimingData(), chain, reduceTracks(file));
+    }
+
+    public long getStartMillis() {
+        checkState(isRunning(), "not playing");
+        return engine.getStartMillis();
+    }
+
+    /**
+     * Returns current milliseconds as timed by the internal clock. You must use
+     * this to compare with {@link #getStartMillis()}.
+     * 
+     * @return current milliseconds
+     */
+    public long getCurrentMillis() {
+        return engine.getCurrentMillis();
     }
 
     /**
@@ -124,7 +131,7 @@ public class MidiPlayer {
                     // play same file after 2 seconds
                     pool.schedule(() -> {
                         if (midiFile != null) {
-                            play(midiFile);
+                            play(midiFile, chain);
                         }
                     }, 2, TimeUnit.SECONDS);
                 }
@@ -148,8 +155,10 @@ public class MidiPlayer {
     }
 
     public void stop() {
+        soundPlayer.get().close();
         engine.stop();
         midiFile = null;
+        chain = null;
     }
 
 }

@@ -27,7 +27,6 @@ package com.techshroom.midishapes.midi.player;
 import static com.google.common.base.Preconditions.checkState;
 
 import java.util.Iterator;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
@@ -37,9 +36,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.eventbus.EventBus;
 import com.techshroom.midishapes.midi.MidiTiming;
 import com.techshroom.midishapes.midi.event.MidiEvent;
+import com.techshroom.midishapes.midi.event.StartEvent;
 import com.techshroom.midishapes.midi.event.StopEvent;
 
 class MidiEngine implements Runnable {
@@ -48,13 +47,12 @@ class MidiEngine implements Runnable {
 
     private final Thread thread = new Thread(this, "MidiEngine");
     private volatile boolean running;
+    private volatile long startMillis;
     private final ReadWriteLock runningLock = new ReentrantReadWriteLock();
     private final Condition runningCondition = runningLock.writeLock().newCondition();
-    private final AtomicReference<MidiSoundPlayer> sounds = new AtomicReference<>();
+    private final AtomicReference<MidiEventChain> chain = new AtomicReference<>();
     private final AtomicReference<MidiTiming> timing = new AtomicReference<>();
     private final AtomicReference<Iterator<MidiEvent>> stream = new AtomicReference<>();
-    private final AtomicReference<Set<Object>> midiEventListeners = new AtomicReference<>();
-    private final AtomicReference<EventBus> events = new AtomicReference<>();
 
     MidiEngine() {
         thread.setDaemon(true);
@@ -62,34 +60,24 @@ class MidiEngine implements Runnable {
         thread.start();
     }
 
-    void start(MidiTiming timing, MidiSoundPlayer sounds, Iterator<MidiEvent> stream, Set<Object> listeners) {
+    void start(MidiTiming timing, MidiEventChain chain, Iterator<MidiEvent> stream) {
         checkState(thread.isAlive(), "CRITICAL ERROR, MidiEngine thread is DEAD!");
-        this.midiEventListeners.set(listeners);
-        EventBus eventBus = new EventBus("midi-engine");
-        listeners.forEach(eventBus::register);
-        this.events.set(eventBus);
         this.timing.set(timing);
-        this.sounds.set(sounds);
+        this.chain.set(chain);
         this.stream.set(stream);
         setRunning(true);
     }
 
     void stop() {
-        Set<Object> listeners = midiEventListeners.get();
-        EventBus eventBus = events.get();
-        if (eventBus != null) {
-            eventBus.post(StopEvent.INSTANCE);
-        }
-        if (listeners != null && eventBus != null) {
-            listeners.forEach(eventBus::unregister);
-        }
         setRunning(false);
         thread.interrupt();
-        sounds.set(null);
+        chain.set(null);
         timing.set(null);
         stream.set(null);
-        events.set(null);
-        midiEventListeners.set(null);
+    }
+
+    public long getStartMillis() {
+        return startMillis;
     }
 
     private void setRunning(boolean running) {
@@ -168,38 +156,40 @@ class MidiEngine implements Runnable {
     }
 
     private void playMidiStream() {
-        try (final MidiSoundPlayer sounds = this.sounds.get().open()) {
-
-            // save stream to improve performance
-            final Iterator<MidiEvent> stream = this.stream.get();
-            final MidiTiming timing = this.timing.get();
-            final MidiEventHandler state = new MidiEventHandler(sounds, events.get());
-            final long startMillis = accurateMilliseconds();
-
+        // save stream to improve performance
+        final Iterator<MidiEvent> stream = this.stream.get();
+        final MidiTiming timing = this.timing.get();
+        final MidiEventChain chain = this.chain.get();
+        final long startMillis = this.startMillis = getCurrentMillis();
+        try {
+            chain.sendEventToNext(StartEvent.create(0, 0, startMillis));
             while (stream.hasNext()) {
                 checkIfShouldReturn();
                 MidiEvent next = stream.next();
                 waitForEvent(next.getTick(), timing, startMillis);
                 checkIfShouldReturn();
-                state.onEvent(next);
+                chain.sendEventToNext(next);
             }
-            
-            // wait for a second before closing, in case there is any echo, etc. left over after all notes
+
+            // wait for a second before closing, in case there is any echo, etc.
+            // left over after all notes
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
+        } finally {
+            chain.sendEventToNext(StopEvent.INSTANCE);
         }
     }
 
-    private long accurateMilliseconds() {
+    public long getCurrentMillis() {
         return TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
     }
 
     private void waitForEvent(int tick, MidiTiming timing, long startMillis) {
         long eventMillis = timing.getMillisecondOffset(tick) + startMillis;
-        long millisDiff = eventMillis - accurateMilliseconds();
+        long millisDiff = eventMillis - getCurrentMillis();
         if (millisDiff > 0) {
             // wait, then churn to be accurate
             try {
@@ -207,7 +197,7 @@ class MidiEngine implements Runnable {
             } catch (InterruptedException e) {
                 throw EarlyReturnError.getInstance();
             }
-            while ((eventMillis - accurateMilliseconds()) > 0) {
+            while ((eventMillis - getCurrentMillis()) > 0) {
                 // churn
             }
         }

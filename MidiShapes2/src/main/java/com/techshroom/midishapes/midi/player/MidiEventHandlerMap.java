@@ -24,15 +24,47 @@
  */
 package com.techshroom.midishapes.midi.player;
 
-public interface MidiSoundPlayer extends MidiEventChainLink, AutoCloseable {
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.function.Consumer;
 
-    static MidiSoundPlayer getDefault() {
-        return JavaxSoundPlayer.getInstance();
+import com.techshroom.midishapes.midi.event.MidiEvent;
+
+public final class MidiEventHandlerMap {
+
+    private final Map<Class<?>, Consumer<?>> map = new HashMap<>();
+
+    private Consumer<MidiEvent> uncheckedGet(Class<?> key) {
+        @SuppressWarnings("unchecked")
+        final Consumer<MidiEvent> cons = (Consumer<MidiEvent>) map.get(key);
+        return cons;
     }
 
-    MidiSoundPlayer open();
+    public <ME extends MidiEvent> Consumer<MidiEvent> get(Class<ME> key) {
+        Deque<Class<?>> classes = new LinkedList<>();
+        classes.addFirst(key);
+        while (!classes.isEmpty()) {
+            Class<?> c = classes.removeFirst();
+            if (c == null || !MidiEvent.class.isAssignableFrom(c)) {
+                continue;
+            }
 
-    @Override
-    void close();
+            Consumer<MidiEvent> cons = uncheckedGet(c);
+            if (cons != null) {
+                return cons;
+            }
+
+            classes.add(c.getSuperclass());
+            Collections.addAll(classes, c.getInterfaces());
+        }
+        return null;
+    }
+
+    public <ME extends MidiEvent> void put(Class<ME> key, Consumer<ME> value) {
+        map.put(key, value);
+    }
 
 }

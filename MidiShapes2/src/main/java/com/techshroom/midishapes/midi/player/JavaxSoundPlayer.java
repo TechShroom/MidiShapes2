@@ -24,19 +24,19 @@
  */
 package com.techshroom.midishapes.midi.player;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import javax.sound.midi.MidiMessage;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.MidiUnavailableException;
 import javax.sound.midi.Receiver;
 
-import com.techshroom.midishapes.midi.event.channel.AllNotesOffEvent;
+import com.techshroom.midishapes.midi.event.MidiEvent;
 import com.techshroom.midishapes.midi.event.channel.ChannelEvent;
-import com.techshroom.midishapes.midi.event.channel.NoteOffEvent;
-import com.techshroom.midishapes.midi.event.channel.NoteOnEvent;
-import com.techshroom.midishapes.midi.event.channel.PitchBendEvent;
-import com.techshroom.midishapes.midi.event.channel.ProgramChangeEvent;
 import com.techshroom.midishapes.midi.event.encode.MidiEventEncoder;
 
 final class JavaxSoundPlayer implements MidiSoundPlayer {
@@ -47,6 +47,7 @@ final class JavaxSoundPlayer implements MidiSoundPlayer {
         return INSTANCE;
     }
 
+    private final Lock lock = new ReentrantLock();
     private MidiEventEncoder enc;
     private Receiver target;
 
@@ -55,21 +56,30 @@ final class JavaxSoundPlayer implements MidiSoundPlayer {
 
     @Override
     public JavaxSoundPlayer open() {
+        lock.lock();
         try {
             target = MidiSystem.getReceiver();
+            checkNotNull(target, "no receiver opened!");
             enc = MidiEventEncoder.getInstance();
         } catch (MidiUnavailableException e) {
             throw new RuntimeException(e);
+        } finally {
+            lock.unlock();
         }
         return this;
     }
 
     @Override
     public void close() {
-        enc = null;
-        if (target != null) {
-            target.close();
-            target = null;
+        lock.lock();
+        try {
+            enc = null;
+            if (target != null) {
+                target.close();
+                target = null;
+            }
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -87,33 +97,22 @@ final class JavaxSoundPlayer implements MidiSoundPlayer {
     }
 
     @Override
-    public void changeProgram(ProgramChangeEvent event) {
-        handleEveryEvent(event);
-    }
-
-    @Override
-    public void noteOn(NoteOnEvent event) {
-        handleEveryEvent(event);
-    }
-
-    @Override
-    public void noteOff(NoteOffEvent event) {
-        handleEveryEvent(event);
-    }
-
-    @Override
-    public void allNotesOff(AllNotesOffEvent event) {
-        handleEveryEvent(event);
-    }
-
-    @Override
-    public void pitchBend(PitchBendEvent event) {
-        handleEveryEvent(event);
+    public void onEvent(MidiEventChain chain) {
+        MidiEvent e = chain.currentEvent();
+        if (e instanceof ChannelEvent) {
+            handleEveryEvent((ChannelEvent) e);
+        }
+        chain.sendCurrentEventToNext();
     }
 
     private void handleEveryEvent(ChannelEvent event) {
-        checkState(target != null, "not opened");
-        target.send(new SimpleMessage(enc.encode(event)), -1);
+        lock.lock();
+        try {
+            checkState(target != null, "not opened");
+            target.send(new SimpleMessage(enc.encode(event)), -1);
+        } finally {
+            lock.unlock();
+        }
     }
 
 }

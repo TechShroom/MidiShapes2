@@ -24,21 +24,22 @@
  */
 package com.techshroom.midishapes.midi.event;
 
+import com.google.auto.value.AutoValue;
 import com.techshroom.midishapes.midi.player.MidiPlayer;
 
 /**
- * Sent when the {@link MidiPlayer} stops.
+ * Sent when the {@link MidiPlayer} starts.
  */
-public enum StopEvent implements MidiEvent {
-    INSTANCE;
+@AutoValue
+public abstract class StartEvent implements MidiEvent {
 
-    @Override
-    public int getTick() {
-        return 0;
+    public static StartEvent create(int tick, int channel, long millis) {
+        return new AutoValue_StartEvent(tick, channel, millis);
     }
 
-    @Override
-    public int getChannel() {
-        return 0;
+    StartEvent() {
     }
+
+    public abstract long getStartMillis();
+
 }
