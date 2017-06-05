@@ -27,6 +27,7 @@ package com.techshroom.midishapes.midi;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
+import java.io.BufferedInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -72,6 +73,7 @@ import com.techshroom.midishapes.midi.event.meta.SequenceNumberEvent;
 import com.techshroom.midishapes.midi.event.meta.SetTempoEvent;
 import com.techshroom.midishapes.midi.event.meta.TextEvent;
 import com.techshroom.midishapes.midi.event.meta.TrackNameEvent;
+import com.techshroom.midishapes.util.ExposedByteArrayInputStream;
 
 public class MidiFileLoader {
 
@@ -92,6 +94,7 @@ public class MidiFileLoader {
     private MidiTimeEncoding timeEncoding;
     private MidiType midiType;
     private int tracks;
+    private int index;
 
     private MidiFileLoader(Path source) {
         this.source = source;
@@ -103,7 +106,7 @@ public class MidiFileLoader {
 
     // here we go, loading an ENTIRE file in one method
     private MidiFile load() throws IOException {
-        try (InputStream input = Files.newInputStream(source)) {
+        try (InputStream input = new BufferedInputStream(Files.newInputStream(source))) {
             inputs.addLast(input);
             loadHeaderChunk();
             switch (midiType) {
@@ -191,7 +194,7 @@ public class MidiFileLoader {
     private interface MidiEventConstructor {
 
         @Nullable
-        MidiEvent construct(int tick, int activeChannel, int[] data) throws IOException;
+        MidiEvent construct(int index, int tick, int activeChannel, int[] data) throws IOException;
 
     }
 
@@ -201,34 +204,37 @@ public class MidiFileLoader {
         ImmutableRangeMap.Builder<Integer, Entry<Integer, MidiEventConstructor>> b = ImmutableRangeMap.builder();
 
         // channel messages
-        b.put(Range.closed(0x80, 0x8F), Maps.immutableEntry(2, (tick, chan, data) -> {
-            return NoteOffEvent.create(tick, chan, data[0], data[1]);
+        b.put(Range.closed(0x80, 0x8F), Maps.immutableEntry(2, (index, tick, chan, data) -> {
+            return NoteOffEvent.create(index, tick, chan, data[0], data[1]);
         }));
-        b.put(Range.closed(0x90, 0x9F), Maps.immutableEntry(2, (tick, chan, data) -> {
-            return NoteOnEvent.create(tick, chan, data[0], data[1]);
+        b.put(Range.closed(0x90, 0x9F), Maps.immutableEntry(2, (index, tick, chan, data) -> {
+            if (data[1] == 0) {
+                return NoteOffEvent.create(index, tick, chan, data[0], data[1]);
+            }
+            return NoteOnEvent.create(index, tick, chan, data[0], data[1]);
         }));
-        b.put(Range.closed(0xA0, 0xAF), Maps.immutableEntry(2, (tick, chan, data) -> {
-            return NoteAftertouchEvent.create(tick, chan, data[0], data[1]);
+        b.put(Range.closed(0xA0, 0xAF), Maps.immutableEntry(2, (index, tick, chan, data) -> {
+            return NoteAftertouchEvent.create(index, tick, chan, data[0], data[1]);
         }));
-        b.put(Range.closed(0xB0, 0xBF), Maps.immutableEntry(2, (tick, chan, data) -> {
-            return controlChange(tick, chan, data[0], data[1]);
+        b.put(Range.closed(0xB0, 0xBF), Maps.immutableEntry(2, (index, tick, chan, data) -> {
+            return controlChange(index, tick, chan, data[0], data[1]);
         }));
-        b.put(Range.closed(0xC0, 0xCF), Maps.immutableEntry(1, (tick, chan, data) -> {
-            return ProgramChangeEvent.create(tick, chan, data[0]);
+        b.put(Range.closed(0xC0, 0xCF), Maps.immutableEntry(1, (index, tick, chan, data) -> {
+            return ProgramChangeEvent.create(index, tick, chan, data[0]);
         }));
-        b.put(Range.closed(0xD0, 0xDF), Maps.immutableEntry(1, (tick, chan, data) -> {
-            return ChannelAftertouchEvent.create(tick, chan, data[0]);
+        b.put(Range.closed(0xD0, 0xDF), Maps.immutableEntry(1, (index, tick, chan, data) -> {
+            return ChannelAftertouchEvent.create(index, tick, chan, data[0]);
         }));
-        b.put(Range.closed(0xE0, 0xEF), Maps.immutableEntry(2, (tick, chan, data) -> {
+        b.put(Range.closed(0xE0, 0xEF), Maps.immutableEntry(2, (index, tick, chan, data) -> {
             // yes, 7, each value is only 7 bits of data
-            return PitchBendEvent.create(tick, chan, data[0] & (data[1] << 7));
+            return PitchBendEvent.create(index, tick, chan, data[0] & (data[1] << 7));
         }));
 
         eventCreators = b.build();
     }
 
     @Nullable
-    private static MidiEvent controlChange(int tick, int chan, int data1, int data2) {
+    private static MidiEvent controlChange(int index, int tick, int chan, int data1, int data2) {
         // I have no clue what * Mode Off is, they all cause AllNotesOffEvent
         // anyways...
         switch (data1) {
@@ -237,9 +243,9 @@ public class MidiFileLoader {
             case 125:
             case 126:
             case 127:
-                return AllNotesOffEvent.create(tick, chan);
+                return AllNotesOffEvent.create(index, tick, chan);
             default:
-                return ControllerEvent.create(tick, chan, data1, data2);
+                return ControllerEvent.create(index, tick, chan, data1, data2);
         }
     }
 
@@ -310,7 +316,7 @@ public class MidiFileLoader {
                     int len = readVarInt("length");
                     pushLength(len);
                     try {
-                        event = metaEvent(absTick, activeChannel, data1);
+                        event = metaEvent(index, absTick, activeChannel, data1);
                     } finally {
                         popLength();
                     }
@@ -320,7 +326,8 @@ public class MidiFileLoader {
                         case 0xF7:
                             // sysex, read & ignore
                             int len = readVarInt("length");
-                            // basically drains section w/ length (due to popLength)
+                            // basically drains section w/ length (due to
+                            // popLength)
                             pushLength(len);
                             popLength();
                             event = null;
@@ -351,7 +358,7 @@ public class MidiFileLoader {
                     if (dataBytes == 2) {
                         data[1] = readUnsigned("data2");
                     }
-                    event = cons.getValue().construct(absTick, activeChannel, data);
+                    event = cons.getValue().construct(index, absTick, activeChannel, data);
                 }
                 if (event instanceof EndOfTrackEvent) {
                     // don't record EOT in the track, it's quite obvious...
@@ -359,6 +366,7 @@ public class MidiFileLoader {
                 }
                 if (event != null) {
                     events.add(event);
+                    index++;
                 }
             }
             trackList.add(MidiTrack.wrap(events.build(), absTick));
@@ -368,28 +376,28 @@ public class MidiFileLoader {
     }
 
     @Nullable
-    private MidiEvent metaEvent(int tick, int channel, int id) throws IOException {
+    private MidiEvent metaEvent(int index, int tick, int channel, int id) throws IOException {
         switch (id) {
             case 0x00:
-                return SequenceNumberEvent.create(tick, channel, readShort("sequence number"));
+                return SequenceNumberEvent.create(index, tick, channel, readShort("sequence number"));
             case 0x01:
-                return TextEvent.create(tick, channel, readText("text"));
+                return TextEvent.create(index, tick, channel, readText("text"));
             case 0x02:
-                return CopyrightNoticeEvent.create(tick, channel, readText("copyright notice"));
+                return CopyrightNoticeEvent.create(index, tick, channel, readText("copyright notice"));
             case 0x03:
-                return TrackNameEvent.create(tick, channel, readText("track name"));
+                return TrackNameEvent.create(index, tick, channel, readText("track name"));
             case 0x04:
-                return InstrumentNameEvent.create(tick, channel, readText("instrument name"));
+                return InstrumentNameEvent.create(index, tick, channel, readText("instrument name"));
             case 0x05:
-                return LyricEvent.create(tick, channel, readText("lyric"));
+                return LyricEvent.create(index, tick, channel, readText("lyric"));
             case 0x06:
-                return MarkerEvent.create(tick, channel, readText("marker"));
+                return MarkerEvent.create(index, tick, channel, readText("marker"));
             case 0x07:
-                return CuePointEvent.create(tick, channel, readText("cue"));
+                return CuePointEvent.create(index, tick, channel, readText("cue"));
             case 0x2F:
-                return EndOfTrackEvent.create(tick, channel);
+                return EndOfTrackEvent.create(index, tick, channel);
             case 0x51:
-                return SetTempoEvent.create(tick, channel, read24BitValue("tempo"));
+                return SetTempoEvent.create(index, tick, channel, read24BitValue("tempo"));
 
             // Hey you!
             // Open an issue or make a PR if you want one of these supported!
@@ -409,13 +417,37 @@ public class MidiFileLoader {
 
     // helper reader methods
 
-    private void pushLength(int length) {
-        inputs.addLast(ByteStreams.limit(input(), length));
+    private void pushLength(int length) throws IOException {
+        // inputs.addLast(ByteStreams.limit(input(), length));
+        // System.err.println("Push " + input() + " = " + length);
+        // On biggest chunks, read in full byte of chunk
+        // On subsequent smaller chunks, use existing array with offset
+        InputStream in = input();
+        byte[] src;
+        int off;
+        if (in instanceof ExposedByteArrayInputStream) {
+            ExposedByteArrayInputStream exposed = (ExposedByteArrayInputStream) in;
+            src = exposed.getBuffer();
+            off = exposed.getOffset();
+        } else {
+            src = new byte[length];
+            ByteStreams.readFully(in, src);
+            off = 0;
+        }
+        inputs.addLast(new ExposedByteArrayInputStream(src, off, length));
     }
 
     private void popLength() throws IOException {
-        ByteStreams.exhaust(input());
-        inputs.removeLast();
+        InputStream removed = inputs.removeLast();
+        ByteStreams.exhaust(removed);
+        InputStream current = input();
+        if (removed instanceof ExposedByteArrayInputStream
+                && current instanceof ExposedByteArrayInputStream) {
+            // update underlying position
+            ExposedByteArrayInputStream cExp = (ExposedByteArrayInputStream) current;
+            cExp.setOffset(cExp.getOffset() +
+                    ((ExposedByteArrayInputStream) removed).getLength());
+        }
     }
 
     // with helper fields here

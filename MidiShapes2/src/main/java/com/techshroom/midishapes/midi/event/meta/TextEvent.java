@@ -30,8 +30,8 @@ import com.techshroom.midishapes.midi.event.MidiEvent;
 @AutoValue
 public abstract class TextEvent implements MidiEvent {
 
-    public static TextEvent create(int tick, int channel, String text) {
-        return new AutoValue_TextEvent(tick, channel, text);
+    public static TextEvent create(int index, int tick, int channel, String text) {
+        return new AutoValue_TextEvent(index, tick, channel, text);
     }
 
     TextEvent() {

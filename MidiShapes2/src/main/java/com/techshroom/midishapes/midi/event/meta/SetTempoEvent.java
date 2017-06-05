@@ -35,16 +35,16 @@ public abstract class SetTempoEvent implements MidiEvent {
 
     public static final long MICROSECONDS_PER_MINUTE = TimeUnit.MINUTES.toMicros(1);
 
-    public static SetTempoEvent createBpm(int tick, int channel, double bpm) {
+    public static SetTempoEvent createBpm(int index, int tick, int channel, double bpm) {
         // have bpm == beats per minute
         // have MPM == micros per minute
         // want: micros per beat
         // MPM / bpm == (u/m)*(m/b) == (u/b)
-        return create(tick, channel, (int) (MICROSECONDS_PER_MINUTE / bpm));
+        return create(index, tick, channel, (int) (MICROSECONDS_PER_MINUTE / bpm));
     }
 
-    public static SetTempoEvent create(int tick, int channel, int tempo) {
-        return new AutoValue_SetTempoEvent(tick, channel, tempo);
+    public static SetTempoEvent create(int index, int tick, int channel, int tempo) {
+        return new AutoValue_SetTempoEvent(index, tick, channel, tempo);
     }
 
     SetTempoEvent() {

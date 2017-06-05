@@ -24,7 +24,22 @@
  */
 package com.techshroom.midishapes.midi.event;
 
+import java.util.Comparator;
+
 public interface MidiEvent {
+
+    static Comparator<MidiEvent> ORDERING = (a, b) -> {
+        int comp = Integer.compare(a.getTick(), b.getTick());
+        if (comp == 0) {
+            comp = Integer.compare(a.getIndex(), b.getIndex());
+        }
+        return comp;
+    };
+
+    /**
+     * Absolute position of this event. Helps maintain orderings.
+     */
+    int getIndex();
 
     /**
      * Absolute tick position of this event. Screw delta time.

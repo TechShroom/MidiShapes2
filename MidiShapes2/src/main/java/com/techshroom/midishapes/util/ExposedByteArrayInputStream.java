@@ -22,22 +22,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.midishapes.midi.event.channel;
+package com.techshroom.midishapes.util;
 
-import com.google.auto.value.AutoValue;
+import static com.google.common.base.Preconditions.checkState;
 
-@AutoValue
-public abstract class NoteOnEvent implements ChannelEvent {
+import java.io.ByteArrayInputStream;
 
-    public static NoteOnEvent create(int index, int tick, int channel, int note, int velocity) {
-        return new AutoValue_NoteOnEvent(index, tick, channel, note, velocity);
+/**
+ * Exposes byte array of {@link ByteArrayInputStream}.
+ */
+public class ExposedByteArrayInputStream extends ByteArrayInputStream {
+
+    private final int inLength;
+
+    public ExposedByteArrayInputStream(byte[] buf, int offset, int length) {
+        super(buf, offset, length);
+        checkState(offset + length <= buf.length, "offset (%s) + length (%s) is too large! (>%s)", offset, length, buf.length);
+        inLength = length;
     }
 
-    NoteOnEvent() {
+    public ExposedByteArrayInputStream(byte[] buf) {
+        this(buf, 0, buf.length);
     }
 
-    public abstract int getNote();
+    public int getLength() {
+        return inLength;
+    }
 
-    public abstract int getVelocity();
+    public byte[] getBuffer() {
+        return buf;
+    }
+
+    public int getOffset() {
+        return pos;
+    }
+
+    public void setOffset(int offset) {
+        pos = offset;
+    }
 
 }

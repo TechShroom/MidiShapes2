@@ -30,8 +30,8 @@ import com.techshroom.midishapes.midi.event.MidiEvent;
 @AutoValue
 public abstract class MarkerEvent implements MidiEvent {
 
-    public static MarkerEvent create(int tick, int channel, String marker) {
-        return new AutoValue_MarkerEvent(tick, channel, marker);
+    public static MarkerEvent create(int index, int tick, int channel, String marker) {
+        return new AutoValue_MarkerEvent(index, tick, channel, marker);
     }
 
     MarkerEvent() {

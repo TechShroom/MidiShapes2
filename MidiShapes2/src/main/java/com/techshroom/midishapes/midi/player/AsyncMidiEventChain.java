@@ -30,9 +30,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +45,8 @@ class AsyncMidiEventChain implements MidiEventChain {
 
     private static final class RunningChain implements MidiEventChain {
 
-        private static final ExecutorService POOL = new ThreadPoolExecutor(1, 10, 1000, TimeUnit.MILLISECONDS, new LinkedBlockingDeque<>(),
+        // single threaded to ensure strict ordering
+        private static final ExecutorService POOL = Executors.newSingleThreadExecutor(
                 new ThreadFactoryBuilder().setDaemon(true).setNameFormat("amec-%d").build());
 
         private final MidiPlayer player;

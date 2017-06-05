@@ -29,8 +29,8 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class ControllerEvent implements ChannelEvent {
 
-    public static ControllerEvent create(int tick, int channel, int controller, int value) {
-        return new AutoValue_ControllerEvent(tick, channel, controller, value);
+    public static ControllerEvent create(int index, int tick, int channel, int controller, int value) {
+        return new AutoValue_ControllerEvent(index, tick, channel, controller, value);
     }
 
     ControllerEvent() {

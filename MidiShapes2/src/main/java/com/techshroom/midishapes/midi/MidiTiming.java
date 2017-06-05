@@ -66,7 +66,7 @@ public class MidiTiming {
         // check if we need a fake 120 BPM to start
         if (tempoEvents.isEmpty() || tempoEvents.get(0).getTick() != 0) {
             // no tempo events OR no zero tick event
-            prev = SetTempoEvent.createBpm(0, 0, 120);
+            prev = SetTempoEvent.createBpm(-1, 0, 0, 120);
             LOGGER.info("No initial tempo set in track, using 120 BPM");
         } else {
             // zero tick event

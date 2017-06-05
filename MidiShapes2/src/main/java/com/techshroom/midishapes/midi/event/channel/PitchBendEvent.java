@@ -29,8 +29,8 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class PitchBendEvent implements ChannelEvent {
 
-    public static PitchBendEvent create(int tick, int channel, int pitch) {
-        return new AutoValue_PitchBendEvent(tick, channel, pitch);
+    public static PitchBendEvent create(int index, int tick, int channel, int pitch) {
+        return new AutoValue_PitchBendEvent(index, tick, channel, pitch);
     }
 
     PitchBendEvent() {

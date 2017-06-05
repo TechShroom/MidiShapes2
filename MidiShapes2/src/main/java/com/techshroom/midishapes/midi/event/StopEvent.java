@@ -31,6 +31,11 @@ import com.techshroom.midishapes.midi.player.MidiPlayer;
  */
 public enum StopEvent implements MidiEvent {
     INSTANCE;
+    
+    @Override
+    public int getIndex() {
+        return Integer.MAX_VALUE;
+    }
 
     @Override
     public int getTick() {

@@ -63,7 +63,7 @@ public class MidiScreenModel implements LifecycleObject {
 
     // trailing slash is IMPORTANT -- it opens it to the folder rather than the
     // parent
-    private static String defaultOpenFolder = Paths.get(System.getProperty("user.home")).toAbsolutePath().toString() + "/Dropbox/";
+    private static String defaultOpenFolder = Paths.get(System.getProperty("user.home")).toAbsolutePath().toString() + "/Documents/misc_midi/";
     private static final PointerBuffer midiFileFilter = BufferUtils.createPointerBuffer(2);
     static {
         midiFileFilter.put(0, MemoryUtil.memUTF8("*.mid"));

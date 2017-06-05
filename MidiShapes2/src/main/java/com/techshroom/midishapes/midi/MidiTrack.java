@@ -34,7 +34,7 @@ import com.techshroom.midishapes.midi.event.MidiEvent;
 public abstract class MidiTrack {
 
     public static MidiTrack wrap(List<? extends MidiEvent> events, int lastTick) {
-        return new AutoValue_MidiTrack(ImmutableList.copyOf(events), lastTick);
+        return new AutoValue_MidiTrack(ImmutableList.sortedCopyOf(MidiEvent.ORDERING, events), lastTick);
     }
 
     MidiTrack() {

@@ -30,7 +30,6 @@ import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
 
@@ -61,7 +60,7 @@ public abstract class MidiFile {
     private static ImmutableListMultimap<Integer, MidiEvent> buildCT(List<MidiTrack> tracks) {
         // sort events by tick then organize by channel
         return tracks.stream().map(MidiTrack::getEvents).flatMap(List::stream)
-                .sorted(Comparator.comparingInt(MidiEvent::getTick))
+                .sorted(MidiEvent.ORDERING)
                 .collect(toImmutableListMultimap(MidiEvent::getChannel, Function.identity()));
     }
 

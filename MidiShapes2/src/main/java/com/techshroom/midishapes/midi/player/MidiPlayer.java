@@ -118,7 +118,7 @@ public class MidiPlayer {
                         next = atList;
                         trackToIncrement = i;
                     } else {
-                        if (next.getTick() > atList.getTick()) {
+                        if (MidiEvent.ORDERING.compare(atList, next) < 0) {
                             next = atList;
                             trackToIncrement = i;
                         }

@@ -162,7 +162,7 @@ class MidiEngine implements Runnable {
         final MidiEventChain chain = this.chain.get();
         final long startMillis = this.startMillis = getCurrentMillis();
         try {
-            chain.sendEventToNext(StartEvent.create(0, 0, startMillis));
+            chain.sendEventToNext(StartEvent.create(Integer.MIN_VALUE, 0, 0, startMillis));
             while (stream.hasNext()) {
                 checkIfShouldReturn();
                 MidiEvent next = stream.next();
