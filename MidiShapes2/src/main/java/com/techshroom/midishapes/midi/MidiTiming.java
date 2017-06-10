@@ -95,7 +95,7 @@ public class MidiTiming {
         // add final entry
         addTC.accept(prev, Integer.MAX_VALUE);
 
-        return new MidiTiming(tempoCalculators.build());
+        return new MidiTiming(tempoCalculators.build(), timeEncoding);
     }
 
     private static final class TickOffsetTempoCalculator {
@@ -119,9 +119,15 @@ public class MidiTiming {
     }
 
     private final RangeMap<Integer, TickOffsetTempoCalculator> tickCalc;
+    private final MidiTimeEncoding encoding;
 
-    private MidiTiming(RangeMap<Integer, TickOffsetTempoCalculator> tempoCalculators) {
+    private MidiTiming(RangeMap<Integer, TickOffsetTempoCalculator> tempoCalculators, MidiTimeEncoding encoding) {
         this.tickCalc = tempoCalculators;
+        this.encoding = encoding;
+    }
+
+    public MidiTimeEncoding getEncoding() {
+        return encoding;
     }
 
     /**

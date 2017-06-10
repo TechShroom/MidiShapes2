@@ -25,7 +25,6 @@
 package com.techshroom.midishapes.view;
 
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.techshroom.midishapes.view.ViewComponents.BLACK_NOTE_LENGTH;
 import static com.techshroom.midishapes.view.ViewComponents.BLACK_NOTE_WIDTH;
 import static com.techshroom.midishapes.view.ViewComponents.OFFSETS;
@@ -34,20 +33,26 @@ import static com.techshroom.midishapes.view.ViewComponents.WHITE_NOTE_LENGTH;
 import static com.techshroom.midishapes.view.ViewComponents.WHITE_NOTE_WIDTH;
 import static com.techshroom.midishapes.view.ViewComponents.isWhiteKey;
 
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.flowpowered.math.vector.Vector3d;
 import com.flowpowered.math.vector.Vector3i;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
 import com.techshroom.midishapes.midi.MidiFile;
 import com.techshroom.midishapes.midi.event.MidiEvent;
@@ -86,27 +91,42 @@ final class ChannelView implements Drawable, LifecycleObject, MidiEventChainLink
     private static final int MAXIMUM_LOADED_SHAPES = 2000;
     private static final int MAX_POST_KEY = MAXIMUM_LOADED_SHAPES / 2;
 
-    private static final int PIXELS_PER_TICK = 1;
-    private static final double NOTE_WIDTH = 15 / PIXELS_PER_TICK;
-    private static final double NOTE_DEPTH = 5 / PIXELS_PER_TICK;
+    private static final int PIXELS_PER_QUARTERNOTE = 50;
+    private static final double NOTE_WIDTH = 15.0 / PIXELS_PER_QUARTERNOTE;
+    private static final double NOTE_DEPTH = 5.0 / PIXELS_PER_QUARTERNOTE;
 
+    private static AtomicIntegerArray constructNoteTicks() {
+        int[] array = new int[PIANO_SIZE];
+        Arrays.fill(array, -1);
+        return new AtomicIntegerArray(array);
+    }
+
+    private static Vector3i randomColor(int channel) {
+        Random r = RANDOM.get();
+        r.setSeed(channel + RANDOM_SEED_OFFSET);
+        return new Vector3i(r.nextInt(256), r.nextInt(256), r.nextInt(256));
+    }
+
+    private final Vector3i vecColor;
     private final ImmutableList<MidiEvent> track;
     private final Lock notesLock = new ReentrantLock();
     private final Deque<Entry<MidiEvent, Shape>> notes = new LinkedList<>();
     private final Set<MidiEvent> ackedEvents = new HashSet<>();
     private final Deque<MidiEvent> hitNotes = new LinkedList<>();
     private final Set<MidiEvent> skippedEvents = new HashSet<>();
+    private final double qptRatio;
     private final GraphicsContext ctx;
     private final MidiFile src;
     private final Lock millisLock = new ReentrantLock();
+    private final Condition startReinitCond = millisLock.newCondition();
     private final MidiPlayer player;
     private final int channel;
-    private final AtomicIntegerArray noteTicks = new AtomicIntegerArray(PIANO_SIZE);
+    private final AtomicIntegerArray noteTicks = constructNoteTicks();
     private int unloadedStart;
     private int eventIndex;
     private Texture color;
     private boolean unsetMillisBase = true;
-    private boolean startReinit = false;
+    private CompletableFuture<Void> startReinitFuture;
     private long millisBase;
 
     public ChannelView(int channel, GraphicsContext ctx, MidiFile src, MidiPlayer player) {
@@ -115,26 +135,27 @@ final class ChannelView implements Drawable, LifecycleObject, MidiEventChainLink
         this.src = src;
         this.player = player;
         this.track = src.getChannelTracks().get(channel);
+        this.vecColor = randomColor(channel);
+        this.qptRatio = 1 / (double) src.getTimingData().getEncoding().getTicksPerQuarternote();
     }
 
-    private Vector3i randomColor() {
-        Random r = RANDOM.get();
-        r.setSeed(channel + RANDOM_SEED_OFFSET);
-        return new Vector3i(r.nextInt(256), r.nextInt(256), r.nextInt(256));
+    public Vector3i getColor() {
+        return vecColor;
     }
 
     @Override
     public void initialize() {
         color = ctx.getTextureProvider().load(
                 StandardTextureLoaders.RGBA_COLOR_LOADER.load(
-                        ColorTextureSpec.create(randomColor(), 1, 1)),
+                        ColorTextureSpec.create(vecColor, 1, 1)),
                 TextureSettings.builder()
                         .downscaling(Downscaling.NEAREST)
                         .upscaling(Upscaling.NEAREST)
                         .textureWrapping(TextureWrap.REPEAT)
                         .build());
 
-        clearNoteState();
+        clearNoteModelState();
+        clearNoteViewState();
         addNotesUntilPreHit();
 
         millisBase = player.getCurrentMillis();
@@ -151,6 +172,7 @@ final class ChannelView implements Drawable, LifecycleObject, MidiEventChainLink
             if (event instanceof NoteOffEvent) {
                 int note = ((NoteOffEvent) event).getNote();
                 if (onNoteOff(event, note)) {
+                    unloadedStart--;
                     break;
                 }
             }
@@ -167,50 +189,62 @@ final class ChannelView implements Drawable, LifecycleObject, MidiEventChainLink
     }
 
     private boolean onNoteOff(MidiEvent event, int note) {
-        int lastTick = noteTicks.get(note);
-        if (lastTick == 0) {
-            return false;
-        }
-        Vector3d offset = OFFSETS[note].toDouble();
-        if (isWhiteKey(note)) {
-            offset = offset.add((WHITE_NOTE_WIDTH - NOTE_WIDTH) / 2.0, 0, WHITE_NOTE_LENGTH - 10);
-        } else {
-            offset = offset.add((BLACK_NOTE_WIDTH - NOTE_WIDTH) / 2.0, 0, BLACK_NOTE_LENGTH - 10);
-        }
-        Vector3d v1 = new Vector3d(0, lastTick, 0).mul(PIXELS_PER_TICK);
-        Vector3d v2 = new Vector3d(NOTE_WIDTH, event.getTick(), NOTE_DEPTH).mul(PIXELS_PER_TICK);
-        Shape shape = ctx.getShapes().rectPrism().shape(
-                offset.add(v1),
-                offset.add(v2),
-                CubeLayout.singleTexture());
-        shape.initialize();
         notesLock.lock();
         try {
             // we can add more notes if there are some yet to be hit
             if ((notes.size() - hitNotes.size()) >= MAXIMUM_LOADED_SHAPES) {
                 return true;
             }
+            int lastTick = noteTicks.get(note);
+            if (lastTick == -1) {
+                return false;
+            }
+            Vector3d offset = OFFSETS[note].toDouble();
+            if (isWhiteKey(note)) {
+                offset = offset.add((WHITE_NOTE_WIDTH - NOTE_WIDTH) / 2.0, 0, WHITE_NOTE_LENGTH - 10);
+            } else {
+                offset = offset.add((BLACK_NOTE_WIDTH - NOTE_WIDTH) / 2.0, 0, BLACK_NOTE_LENGTH - 10);
+            }
+
+            double lastQ = qptRatio * (double) lastTick;
+            double thisQ = qptRatio * (double) event.getTick();
+            Vector3d v1 = new Vector3d(0, lastQ, 0).mul(PIXELS_PER_QUARTERNOTE);
+            Vector3d v2 = new Vector3d(NOTE_WIDTH, thisQ, NOTE_DEPTH).mul(PIXELS_PER_QUARTERNOTE);
+            Shape shape = ctx.getShapes().rectPrism().shape(
+                    offset.add(v1),
+                    offset.add(v2),
+                    CubeLayout.singleTexture());
+            shape.initialize();
             ackedEvents.add(event);
             notes.add(Maps.immutableEntry(event, shape));
         } finally {
             notesLock.unlock();
         }
-        noteTicks.set(note, 0);
+        noteTicks.set(note, -1);
         return false;
     }
 
     @Override
     public void destroy() {
-        clearNoteState();
+        clearNoteModelState();
+        clearNoteViewState();
     }
 
-    private void clearNoteState() {
+    private void clearNoteModelState() {
+        notesLock.lock();
+        try {
+            skippedEvents.clear();
+            hitNotes.clear();
+        } finally {
+            notesLock.unlock();
+        }
+    }
+
+    private void clearNoteViewState() {
         notesLock.lock();
         try {
             unloadedStart = 0;
             ackedEvents.clear();
-            skippedEvents.clear();
-            hitNotes.clear();
             notes.forEach(e -> e.getValue().destroy());
             notes.clear();
         } finally {
@@ -236,7 +270,21 @@ final class ChannelView implements Drawable, LifecycleObject, MidiEventChainLink
                     eventIndex = Iterables.indexOf(track, e -> e.getTick() >= startTick) - 1;
                     millisBase = ((StartEvent) event).getStartMillis();
                     unsetMillisBase = false;
-                    startReinit = true;
+                    clearNoteModelState();
+                    CompletableFuture<Void> future = startReinitFuture = new CompletableFuture<>();
+                    try {
+                        while (!future.isDone()) {
+                            startReinitCond.await();
+                        }
+                        future.get();
+                    } catch (ExecutionException e1) {
+                        Throwable t = e1.getCause();
+                        Throwables.throwIfUnchecked(t);
+                        throw new RuntimeException(t);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
                 } else if (stop) {
                     eventIndex = 0;
                     millisBase = 0;
@@ -282,22 +330,35 @@ final class ChannelView implements Drawable, LifecycleObject, MidiEventChainLink
                 final long startMs = ms(tickFrom);
                 final long endMs = ms(tickTo);
 
-                final float millisDiff = endMs - startMs;
-                final float progressFactor = (offsetM - startMs) / millisDiff;
-                offset = Maths.lerp(tickFrom, tickTo, progressFactor);
+                final double currentTick;
+
+                if (tickFrom == tickTo) {
+                    currentTick = tickFrom;
+                } else {
+                    final float millisDiff = endMs - startMs;
+                    final float progressFactor = (offsetM - startMs) / millisDiff;
+                    currentTick = Maths.lerp(tickFrom, tickTo, progressFactor);
+                }
+                offset = (float) (qptRatio * currentTick);
             } else {
                 offset = 0;
             }
 
             notesLock.lock();
             try {
-                if (startReinit) {
-                    clearNoteState();
-                    addNotesUntilPreHit();
-                    startReinit = false;
+                if (startReinitFuture != null) {
+                    try {
+                        clearNoteViewState();
+                        addNotesUntilPreHit();
+                    } finally {
+                        startReinitFuture.complete(null);
+                        startReinitFuture = null;
+                        startReinitCond.signalAll();
+                    }
                 }
+                boolean any = false;
                 while (hitNotes.size() > MAX_POST_KEY) {
-                    MidiEvent nextHit = hitNotes.removeFirst();
+                    any = true;
 
                     // remove extra skipped events
                     while (skippedEvents.contains(notes.getFirst().getKey())) {
@@ -308,17 +369,23 @@ final class ChannelView implements Drawable, LifecycleObject, MidiEventChainLink
                         addNotesUntilPreHit();
                     }
 
+                    MidiEvent nextHit = hitNotes.removeFirst();
                     if (notes.getFirst().getKey().equals(nextHit)) {
                         Entry<MidiEvent, Shape> removed = notes.remove();
                         ackedEvents.remove(removed.getKey());
                         removed.getValue().destroy();
                     } else {
-                        System.err.println(notes.stream().map(Entry::getKey).collect(toImmutableList()));
-                        System.err.println(hitNotes);
-                        checkState(false, "should have removed a hit note: hit=%s, top=%s", nextHit, notes.getFirst().getKey());
+                        System.err.println("Notes:");
+                        notes.stream().map(Entry::getKey).limit(20).forEach(e -> System.err.println("\t" + e));
+                        System.err.println("Hit Notes:");
+                        hitNotes.stream().limit(20).forEach(e -> System.err.println("\t" + e));
+                        System.err.println(Iterators.indexOf(notes.iterator(), i -> i.getKey().equals(nextHit)));
+                        checkState(false, "should have removed a hit note:\nhit=%s\ntop=%s", nextHit, notes.getFirst().getKey());
                     }
                 }
-                addNotesUntilPreHit();
+                if (any) {
+                    addNotesUntilPreHit();
+                }
             } finally {
                 notesLock.unlock();
             }
@@ -327,7 +394,7 @@ final class ChannelView implements Drawable, LifecycleObject, MidiEventChainLink
         }
         try (TransformStack stack = ctx.pushTransformer(); Bindable tex = color.bind()) {
             stack.model()
-                    .translate(0, -PIXELS_PER_TICK * offset, 0);
+                    .translate(0, -PIXELS_PER_QUARTERNOTE * offset, 0);
             stack.apply(ctx.getMatrixUploader());
             notes.forEach(e -> e.getValue().draw());
         }

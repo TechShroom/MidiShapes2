@@ -128,7 +128,7 @@ public class MainModule extends AbstractModule {
             @Override
             protected MidiEventChain computeValue() {
                 return player.chainBuilder()
-                        .async()
+                        .sync()
                         .addAll(view.viewEventChainExpression().get())
                         .add(soundPlayer.get())
                         .build();

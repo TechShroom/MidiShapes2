@@ -125,7 +125,7 @@ public class MidiScreenView implements Drawable, LifecycleObject {
         TextureData white = colorLoader.load(ColorTextureSpec.create("fefde7", 1, 1));
         TextureData black = colorLoader.load(ColorTextureSpec.create("333", 1, 1));
         TextureData playingWhite = colorLoader.load(ColorTextureSpec.create("f00", 1, 1));
-        TextureData playingBlack = colorLoader.load(ColorTextureSpec.create("990", 1, 1));
+        TextureData playingBlack = colorLoader.load(ColorTextureSpec.create("f01", 1, 1));
         TextureCollection textures = TextureCollection.of(ImmutableBiMap.of(
                 white, "white",
                 black, "black",

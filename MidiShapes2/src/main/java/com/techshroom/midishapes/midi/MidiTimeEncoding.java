@@ -54,10 +54,17 @@ public abstract class MidiTimeEncoding {
     }
 
     // uses values from Sequencer
-    abstract float getDivision();
+    public abstract float getDivision();
 
     // carries subframe count with SMPTE, TPQ value with TPQ
-    abstract int getResolution();
+    public abstract int getResolution();
+
+    /**
+     * @return TPQ or 1 under SMPTE
+     */
+    public final int getTicksPerQuarternote() {
+        return getDivision() == Sequence.PPQ ? getResolution() : 1;
+    }
 
     /**
      * Retrieve microseconds per tick. The time per tick may be tempo dependent,

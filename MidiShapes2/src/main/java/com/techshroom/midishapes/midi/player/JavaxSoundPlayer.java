@@ -25,7 +25,6 @@
 package com.techshroom.midishapes.midi.player;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -108,7 +107,11 @@ final class JavaxSoundPlayer implements MidiSoundPlayer {
     private void handleEveryEvent(ChannelEvent event) {
         lock.lock();
         try {
-            checkState(target != null, "not opened");
+            if (target == null) {
+                return;
+            }
+            // TODO handle closing of async chain
+            // checkState(target != null, "not opened");
             target.send(new SimpleMessage(enc.encode(event)), -1);
         } finally {
             lock.unlock();
