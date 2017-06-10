@@ -25,11 +25,13 @@
 package com.techshroom.midishapes.view;
 
 import static com.google.common.base.Preconditions.checkState;
-import static com.techshroom.midishapes.view.ViewComponents.BLACK_NOTE_LENGTH;
+import static com.techshroom.midishapes.view.ViewComponents.BLACK_NOTE_DEPTH;
+import static com.techshroom.midishapes.view.ViewComponents.BLACK_NOTE_HEIGHT;
 import static com.techshroom.midishapes.view.ViewComponents.BLACK_NOTE_WIDTH;
 import static com.techshroom.midishapes.view.ViewComponents.OFFSETS;
 import static com.techshroom.midishapes.view.ViewComponents.PIANO_SIZE;
-import static com.techshroom.midishapes.view.ViewComponents.WHITE_NOTE_LENGTH;
+import static com.techshroom.midishapes.view.ViewComponents.WHITE_NOTE_DEPTH;
+import static com.techshroom.midishapes.view.ViewComponents.WHITE_NOTE_HEIGHT;
 import static com.techshroom.midishapes.view.ViewComponents.WHITE_NOTE_WIDTH;
 import static com.techshroom.midishapes.view.ViewComponents.isWhiteKey;
 
@@ -92,8 +94,8 @@ final class ChannelView implements Drawable, LifecycleObject, MidiEventChainLink
     private static final int MAX_POST_KEY = MAXIMUM_LOADED_SHAPES / 2;
 
     private static final int PIXELS_PER_QUARTERNOTE = 50;
-    private static final double NOTE_WIDTH = 15.0 / PIXELS_PER_QUARTERNOTE;
-    private static final double NOTE_DEPTH = 5.0 / PIXELS_PER_QUARTERNOTE;
+    private static final double NOTE_WIDTH = 15.0;
+    private static final double NOTE_DEPTH = 5.0;
 
     private static AtomicIntegerArray constructNoteTicks() {
         int[] array = new int[PIANO_SIZE];
@@ -199,20 +201,20 @@ final class ChannelView implements Drawable, LifecycleObject, MidiEventChainLink
             if (lastTick == -1) {
                 return false;
             }
-            Vector3d offset = OFFSETS[note].toDouble();
+            Vector3d pixelOff = OFFSETS[note].toDouble();
             if (isWhiteKey(note)) {
-                offset = offset.add((WHITE_NOTE_WIDTH - NOTE_WIDTH) / 2.0, 0, WHITE_NOTE_LENGTH - 10);
+                pixelOff = pixelOff.add((WHITE_NOTE_WIDTH - NOTE_WIDTH) / 2.0, WHITE_NOTE_HEIGHT, WHITE_NOTE_DEPTH * (2.0 / 5));
             } else {
-                offset = offset.add((BLACK_NOTE_WIDTH - NOTE_WIDTH) / 2.0, 0, BLACK_NOTE_LENGTH - 10);
+                pixelOff = pixelOff.add((BLACK_NOTE_WIDTH - NOTE_WIDTH) / 2.0, BLACK_NOTE_HEIGHT, BLACK_NOTE_DEPTH * (2.0 / 5));
             }
 
             double lastQ = qptRatio * (double) lastTick;
             double thisQ = qptRatio * (double) event.getTick();
-            Vector3d v1 = new Vector3d(0, lastQ, 0).mul(PIXELS_PER_QUARTERNOTE);
-            Vector3d v2 = new Vector3d(NOTE_WIDTH, thisQ, NOTE_DEPTH).mul(PIXELS_PER_QUARTERNOTE);
+            Vector3d v1 = new Vector3d(0, lastQ * PIXELS_PER_QUARTERNOTE, 0);
+            Vector3d v2 = new Vector3d(NOTE_WIDTH, thisQ * PIXELS_PER_QUARTERNOTE, NOTE_DEPTH);
             Shape shape = ctx.getShapes().rectPrism().shape(
-                    offset.add(v1),
-                    offset.add(v2),
+                    pixelOff.add(v1),
+                    pixelOff.add(v2),
                     CubeLayout.singleTexture());
             shape.initialize();
             ackedEvents.add(event);

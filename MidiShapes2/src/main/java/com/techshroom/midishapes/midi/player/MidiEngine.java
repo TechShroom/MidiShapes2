@@ -160,7 +160,8 @@ class MidiEngine implements Runnable {
         final Iterator<MidiEvent> stream = this.stream.get();
         final MidiTiming timing = this.timing.get();
         final MidiEventChain chain = this.chain.get();
-        final long startMillis = this.startMillis = getCurrentMillis();
+        // add extra wait before actual start
+        final long startMillis = this.startMillis = getCurrentMillis() + 200;
         try {
             chain.sendEventToNext(StartEvent.create(Integer.MIN_VALUE, 0, 0, startMillis));
             while (stream.hasNext()) {

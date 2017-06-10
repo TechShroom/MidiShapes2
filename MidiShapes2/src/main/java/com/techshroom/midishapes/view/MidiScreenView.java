@@ -24,16 +24,16 @@
  */
 package com.techshroom.midishapes.view;
 
+import static com.techshroom.midishapes.view.ViewComponents.BLACK_NOTE_DEPTH;
 import static com.techshroom.midishapes.view.ViewComponents.BLACK_NOTE_HEIGHT;
-import static com.techshroom.midishapes.view.ViewComponents.BLACK_NOTE_LENGTH;
 import static com.techshroom.midishapes.view.ViewComponents.BLACK_NOTE_WIDTH;
 import static com.techshroom.midishapes.view.ViewComponents.OFFSETS;
 import static com.techshroom.midishapes.view.ViewComponents.PIANO_DY;
 import static com.techshroom.midishapes.view.ViewComponents.PIANO_DZ;
 import static com.techshroom.midishapes.view.ViewComponents.PIANO_SIZE;
 import static com.techshroom.midishapes.view.ViewComponents.PIANO_WIDTH;
+import static com.techshroom.midishapes.view.ViewComponents.WHITE_NOTE_DEPTH;
 import static com.techshroom.midishapes.view.ViewComponents.WHITE_NOTE_HEIGHT;
-import static com.techshroom.midishapes.view.ViewComponents.WHITE_NOTE_LENGTH;
 import static com.techshroom.midishapes.view.ViewComponents.WHITE_NOTE_WIDTH;
 import static com.techshroom.midishapes.view.ViewComponents.isWhiteKey;
 
@@ -142,23 +142,23 @@ public class MidiScreenView implements Drawable, LifecycleObject {
 
         // 30x30x150 white keys
         this.whiteNote = ctx.getShapes().rectPrism().shape(Vector3d.ZERO,
-                new Vector3d(WHITE_NOTE_WIDTH, WHITE_NOTE_LENGTH, WHITE_NOTE_HEIGHT),
+                new Vector3d(WHITE_NOTE_WIDTH, WHITE_NOTE_HEIGHT, WHITE_NOTE_DEPTH),
                 new CubeLayout(atlas, textures).all("white").build())
                 .asBindable().get();
         this.whiteNote.initialize();
         this.playingWhiteNote = ctx.getShapes().rectPrism().shape(Vector3d.ZERO,
-                new Vector3d(WHITE_NOTE_WIDTH, WHITE_NOTE_LENGTH, WHITE_NOTE_HEIGHT),
+                new Vector3d(WHITE_NOTE_WIDTH, WHITE_NOTE_HEIGHT, WHITE_NOTE_DEPTH),
                 new CubeLayout(atlas, textures).all("playing-white").build())
                 .asBindable().get();
         this.playingWhiteNote.initialize();
         // 20x20x50 black keys
         this.blackNote = ctx.getShapes().rectPrism().shape(Vector3d.ZERO,
-                new Vector3d(BLACK_NOTE_WIDTH, BLACK_NOTE_LENGTH, BLACK_NOTE_HEIGHT),
+                new Vector3d(BLACK_NOTE_WIDTH, BLACK_NOTE_HEIGHT, BLACK_NOTE_DEPTH),
                 new CubeLayout(atlas, textures).all("black").build())
                 .asBindable().get();
         this.blackNote.initialize();
         this.playingBlackNote = ctx.getShapes().rectPrism().shape(Vector3d.ZERO,
-                new Vector3d(BLACK_NOTE_WIDTH, BLACK_NOTE_LENGTH, BLACK_NOTE_HEIGHT),
+                new Vector3d(BLACK_NOTE_WIDTH, BLACK_NOTE_HEIGHT, BLACK_NOTE_DEPTH),
                 new CubeLayout(atlas, textures).all("playing-black").build())
                 .asBindable().get();
         this.playingBlackNote.initialize();

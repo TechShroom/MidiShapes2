@@ -41,11 +41,11 @@ public final class ViewComponents {
     static final int PIANO_SIZE = 128;
 
     static final int WHITE_NOTE_WIDTH = 30;
-    static final int WHITE_NOTE_LENGTH = 30;
-    static final int WHITE_NOTE_HEIGHT = 150;
+    static final int WHITE_NOTE_HEIGHT = 30;
+    static final int WHITE_NOTE_DEPTH = 150;
     static final int BLACK_NOTE_WIDTH = 20;
-    static final int BLACK_NOTE_LENGTH = 20;
-    static final int BLACK_NOTE_HEIGHT = 50;
+    static final int BLACK_NOTE_HEIGHT = 20;
+    static final int BLACK_NOTE_DEPTH = 50;
 
     static final int PIANO_DY = 75;
     static final int PIANO_DZ = -175;
