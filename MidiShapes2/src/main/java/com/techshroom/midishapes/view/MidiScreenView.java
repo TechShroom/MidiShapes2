@@ -60,11 +60,11 @@ import com.techshroom.unplanned.blitter.textures.TextureSettings;
 import com.techshroom.unplanned.blitter.textures.TextureWrap;
 import com.techshroom.unplanned.blitter.textures.Upscaling;
 import com.techshroom.unplanned.blitter.textures.loader.ColorTextureLoader;
-import com.techshroom.unplanned.blitter.textures.loader.ColorTextureSpec;
 import com.techshroom.unplanned.blitter.textures.loader.StandardTextureLoaders;
 import com.techshroom.unplanned.blitter.textures.map.TextureAtlas;
 import com.techshroom.unplanned.blitter.textures.map.TextureCollection;
 import com.techshroom.unplanned.blitter.transform.TransformStack;
+import com.techshroom.unplanned.core.util.Color;
 import com.techshroom.unplanned.core.util.LifecycleObject;
 import com.techshroom.unplanned.event.keyboard.KeyState;
 import com.techshroom.unplanned.event.keyboard.KeyStateEvent;
@@ -122,10 +122,10 @@ public class MidiScreenView implements Drawable, LifecycleObject {
         });
 
         ColorTextureLoader colorLoader = StandardTextureLoaders.RGBA_COLOR_LOADER;
-        TextureData white = colorLoader.load(ColorTextureSpec.create("fefde7", 1, 1));
-        TextureData black = colorLoader.load(ColorTextureSpec.create("333", 1, 1));
-        TextureData playingWhite = colorLoader.load(ColorTextureSpec.create("f00", 1, 1));
-        TextureData playingBlack = colorLoader.load(ColorTextureSpec.create("f01", 1, 1));
+        TextureData white = colorLoader.load(Color.fromString("fefde7"));
+        TextureData black = colorLoader.load(Color.fromString("333"));
+        TextureData playingWhite = colorLoader.load(Color.fromString("f00"));
+        TextureData playingBlack = colorLoader.load(Color.fromString("f01"));
         TextureCollection textures = TextureCollection.of(ImmutableBiMap.of(
                 white, "white",
                 black, "black",
@@ -139,6 +139,7 @@ public class MidiScreenView implements Drawable, LifecycleObject {
                         .upscaling(Upscaling.NEAREST)
                         .textureWrapping(TextureWrap.CLAMP_TO_EDGE)
                         .build());
+        this.atlas.initialize();
 
         // 30x30x150 white keys
         this.whiteNote = ctx.getShapes().rectPrism().shape(Vector3d.ZERO,

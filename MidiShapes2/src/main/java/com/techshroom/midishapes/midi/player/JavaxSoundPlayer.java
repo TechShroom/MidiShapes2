@@ -25,21 +25,40 @@
 package com.techshroom.midishapes.midi.player;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 
+import javax.sound.midi.InvalidMidiDataException;
+import javax.sound.midi.MidiDevice;
 import javax.sound.midi.MidiMessage;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.MidiUnavailableException;
 import javax.sound.midi.Receiver;
+import javax.sound.midi.Soundbank;
+import javax.sound.midi.Synthesizer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.ImmutableList;
 import com.techshroom.midishapes.midi.event.MidiEvent;
 import com.techshroom.midishapes.midi.event.channel.ChannelEvent;
 import com.techshroom.midishapes.midi.event.encode.MidiEventEncoder;
+import com.techshroom.unplanned.window.dialog.GLOptionPane;
 
 final class JavaxSoundPlayer implements MidiSoundPlayer {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(JavaxSoundPlayer.class);
+
+    private static final Function<MidiDevice.Info, String> DEVICE_INFO_TO_STRING = i -> {
+        return String.format("%s %s: %s", i.getName(), i.getVersion(), i.getDescription());
+    };
     private static final JavaxSoundPlayer INSTANCE = new JavaxSoundPlayer();
 
     static JavaxSoundPlayer getInstance() {
@@ -47,17 +66,81 @@ final class JavaxSoundPlayer implements MidiSoundPlayer {
     }
 
     private final Lock lock = new ReentrantLock();
+    private final List<MidiDevice.Info> deviceInfos;
+    private MidiDevice.Info deviceInfo;
     private MidiEventEncoder enc;
+    private MidiDevice device;
     private Receiver target;
+    private boolean open;
 
     private JavaxSoundPlayer() {
+        deviceInfos = ImmutableList.copyOf(MidiSystem.getMidiDeviceInfo());
+        checkState(deviceInfos.size() > 0, "there are no MIDI devices on this system");
+        setDeviceInfo(deviceInfos.get(0));
+    }
+
+    private void setDeviceInfo(MidiDevice.Info info) {
+        lock.lock();
+        try {
+            if (device != null) {
+                device.close();
+                device = null;
+            }
+            deviceInfo = info;
+            try {
+                if (open) {
+                    close();
+                }
+                device = MidiSystem.getMidiDevice(info);
+                if (open) {
+                    open();
+                }
+            } catch (MidiUnavailableException e) {
+                throw new RuntimeException(e);
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public void openSettingsPanel() {
+        MidiDevice.Info selected = GLOptionPane.showInputDialog("Choose a MIDI Device", "Choose a MIDI Device",
+                deviceInfos, deviceInfo, DEVICE_INFO_TO_STRING);
+        if (selected != null) {
+            setDeviceInfo(selected);
+        }
+    }
+
+    @Override
+    public void setSoundsfont(Path sf2File) {
+        lock.lock();
+        try {
+            if (device instanceof Synthesizer) {
+                Synthesizer s = (Synthesizer) device;
+                Soundbank sb;
+                try {
+                    sb = MidiSystem.getSoundbank(sf2File.toFile());
+                } catch (InvalidMidiDataException | IOException e) {
+                    throw new IllegalStateException("failed to load SF2", e);
+                }
+                if (s.isSoundbankSupported(sb)) {
+                    s.loadAllInstruments(sb);
+                    return;
+                }
+            }
+            LOGGER.warn("Ignoring soundbank " + sf2File + ", as it could not be loaded or used.");
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override
     public JavaxSoundPlayer open() {
         lock.lock();
         try {
-            target = MidiSystem.getReceiver();
+            device.open();
+            target = device.getReceiver();
             checkNotNull(target, "no receiver opened!");
             enc = MidiEventEncoder.getInstance();
         } catch (MidiUnavailableException e) {
@@ -77,6 +160,7 @@ final class JavaxSoundPlayer implements MidiSoundPlayer {
                 target.close();
                 target = null;
             }
+            setDeviceInfo(deviceInfo);
         } finally {
             lock.unlock();
         }

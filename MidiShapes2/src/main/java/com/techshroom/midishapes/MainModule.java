@@ -24,6 +24,10 @@
  */
 package com.techshroom.midishapes;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -33,12 +37,15 @@ import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.eventbus.EventBus;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.AbstractModule;
+import com.google.inject.Binding;
+import com.google.inject.BindingAnnotation;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
-import com.google.inject.matcher.Matchers;
+import com.google.inject.matcher.AbstractMatcher;
 import com.google.inject.spi.ProvisionListener;
 import com.techshroom.midishapes.midi.player.MidiEventChain;
 import com.techshroom.midishapes.midi.player.MidiPlayer;
@@ -46,7 +53,6 @@ import com.techshroom.midishapes.midi.player.MidiSoundPlayer;
 import com.techshroom.midishapes.view.MidiScreenView;
 import com.techshroom.midishapes.view.ViewComponents;
 import com.techshroom.unplanned.blitter.GraphicsContext;
-import com.techshroom.unplanned.event.Event;
 import com.techshroom.unplanned.input.Keyboard;
 import com.techshroom.unplanned.input.Mouse;
 import com.techshroom.unplanned.window.Window;
@@ -55,20 +61,36 @@ import com.techshroom.unplanned.window.WindowSettings;
 import javafx.beans.binding.ObjectBinding;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 
 public class MainModule extends AbstractModule {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MainModule.class);
 
+    @BindingAnnotation
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ ElementType.TYPE, ElementType.FIELD, ElementType.METHOD })
+    public @interface UnregisteredObjects {
+    }
+
+    private final ObservableList<Object> unregisteredObjects = FXCollections.observableArrayList();
+
     @Override
     protected void configure() {
         // register everything with event bus
-        bindListener(Matchers.any(), new ProvisionListener() {
+        bindListener(new AbstractMatcher<Binding<?>>() {
+
+            @Override
+            public boolean matches(Binding<?> t) {
+                return t.getKey().getTypeLiteral().getRawType().getName().startsWith("com.techshroom.midishapes");
+            }
+        }, new ProvisionListener() {
 
             @Override
             public <T> void onProvision(ProvisionInvocation<T> provision) {
                 LOGGER.info("Registering {} with event bus", provision.getBinding().getKey());
-                Event.BUS.register(provision.provision());
+                unregisteredObjects.add(provision.provision());
             }
         });
         // to explicitly register for events
@@ -86,6 +108,9 @@ public class MainModule extends AbstractModule {
                 .toInstance(pool);
         bind(new TypeLiteral<ObjectProperty<MidiSoundPlayer>>() {})
                 .toInstance(new SimpleObjectProperty<>(this, "soundPlayer", MidiSoundPlayer.getDefault()));
+        bind(new TypeLiteral<ObservableList<Object>>() {})
+                .annotatedWith(UnregisteredObjects.class)
+                .toInstance(unregisteredObjects);
     }
 
     @Provides
@@ -94,7 +119,14 @@ public class MainModule extends AbstractModule {
         return WindowSettings.builder()
                 .screenSize(1080, 768)
                 .title("MIDI Shapes")
+                .msaa(true)
                 .build().createWindow();
+    }
+
+    @Provides
+    @Singleton
+    protected EventBus primaryEventBus(Window window) {
+        return window.getEventBus();
     }
 
     @Provides

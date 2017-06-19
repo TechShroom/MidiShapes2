@@ -43,6 +43,7 @@ import com.techshroom.midishapes.midi.MidiFile;
 import com.techshroom.midishapes.midi.MidiFileLoader;
 import com.techshroom.midishapes.midi.player.MidiEventChain;
 import com.techshroom.midishapes.midi.player.MidiPlayer;
+import com.techshroom.midishapes.midi.player.MidiSoundPlayer;
 import com.techshroom.unplanned.core.util.LifecycleObject;
 import com.techshroom.unplanned.event.keyboard.KeyState;
 import com.techshroom.unplanned.event.keyboard.KeyStateEvent;
@@ -65,22 +66,28 @@ public class MidiScreenModel implements LifecycleObject {
     // parent
     private static String defaultOpenFolder = Paths.get(System.getProperty("user.home")).toAbsolutePath().toString() + "/Documents/misc_midi/";
     private static final PointerBuffer midiFileFilter = BufferUtils.createPointerBuffer(2);
+    private static final PointerBuffer soundfontFileFilter = BufferUtils.createPointerBuffer(1);
     static {
         midiFileFilter.put(0, MemoryUtil.memUTF8("*.mid"));
         midiFileFilter.put(1, MemoryUtil.memUTF8("*.midi"));
+
+        soundfontFileFilter.put(0, MemoryUtil.memUTF8("*.sf2"));
     }
 
     private final ExecutorService pool;
     private final Window window;
     private final MidiPlayer player;
+    private final ObjectProperty<MidiSoundPlayer> soundPlayer;
     private final ObjectBinding<MidiEventChain> chain;
     private volatile Path openFileTransfer;
 
     @Inject
-    MidiScreenModel(ExecutorService pool, Window window, MidiPlayer player, ObjectBinding<MidiEventChain> chain) {
+    MidiScreenModel(ExecutorService pool, Window window, MidiPlayer player,
+            ObjectProperty<MidiSoundPlayer> soundPlayer, ObjectBinding<MidiEventChain> chain) {
         this.pool = pool;
         this.window = window;
         this.player = player;
+        this.soundPlayer = soundPlayer;
         this.chain = chain;
     }
 
@@ -173,6 +180,13 @@ public class MidiScreenModel implements LifecycleObject {
                     this.player.play(file, chain.get());
                 }
             }
+        } else if (event.is(Key.S, KeyState.RELEASED)) {
+            String file = tinyfd_openFileDialog("Pick a Soundfont File", defaultOpenFolder, soundfontFileFilter, "Soundfonts (SF2)", false);
+            if (file != null) {
+                this.soundPlayer.get().setSoundsfont(Paths.get(file));
+            }
+        } else if (event.is(Key.D, KeyState.RELEASED)) {
+            this.soundPlayer.get().openSettingsPanel();
         } else if (event.is(Key.ESCAPE, KeyState.RELEASED)) {
             window.setCloseRequested(true);
         }

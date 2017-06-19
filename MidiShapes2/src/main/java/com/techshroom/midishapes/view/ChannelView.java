@@ -76,9 +76,9 @@ import com.techshroom.unplanned.blitter.textures.Texture;
 import com.techshroom.unplanned.blitter.textures.TextureSettings;
 import com.techshroom.unplanned.blitter.textures.TextureWrap;
 import com.techshroom.unplanned.blitter.textures.Upscaling;
-import com.techshroom.unplanned.blitter.textures.loader.ColorTextureSpec;
 import com.techshroom.unplanned.blitter.textures.loader.StandardTextureLoaders;
 import com.techshroom.unplanned.blitter.transform.TransformStack;
+import com.techshroom.unplanned.core.util.Color;
 import com.techshroom.unplanned.core.util.LifecycleObject;
 import com.techshroom.unplanned.core.util.Maths;
 
@@ -149,12 +149,13 @@ final class ChannelView implements Drawable, LifecycleObject, MidiEventChainLink
     public void initialize() {
         color = ctx.getTextureProvider().load(
                 StandardTextureLoaders.RGBA_COLOR_LOADER.load(
-                        ColorTextureSpec.create(vecColor, 1, 1)),
+                        Color.fromInt(vecColor.getX(), vecColor.getY(), vecColor.getZ(), 0xFF)),
                 TextureSettings.builder()
                         .downscaling(Downscaling.NEAREST)
                         .upscaling(Upscaling.NEAREST)
                         .textureWrapping(TextureWrap.REPEAT)
                         .build());
+        color.initialize();
 
         clearNoteModelState();
         clearNoteViewState();
@@ -228,6 +229,7 @@ final class ChannelView implements Drawable, LifecycleObject, MidiEventChainLink
 
     @Override
     public void destroy() {
+        color.destroy();
         clearNoteModelState();
         clearNoteViewState();
     }

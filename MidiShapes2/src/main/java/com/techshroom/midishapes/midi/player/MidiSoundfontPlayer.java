@@ -28,6 +28,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static org.lwjgl.openal.ALC10.alcOpenDevice;
 
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 
 import org.lwjgl.openal.AL;
 import org.lwjgl.openal.ALC;
@@ -51,13 +52,22 @@ class MidiSoundfontPlayer implements MidiSoundPlayer {
     }
 
     @Override
+    public void openSettingsPanel() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void setSoundsfont(Path sf2File) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public MidiSoundPlayer open() {
         return this;
     }
 
     @Override
     public void close() {
-
     }
 
     @Override

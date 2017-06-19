@@ -153,6 +153,7 @@ subprojects {
 project('UDAPI') {
     dependencies {
         addLWJGL(project, 'stb', true);
+        addLWJGL(project, 'yoga', true);
     }
 }
 
@@ -164,8 +165,6 @@ project('UDImpl') {
         addLWJGL(project, 'glfw', true);
         addLWJGL(project, 'nanovg', true);
         addLWJGL(project, 'stb', true);
-        addLWJGL(project, 'jemalloc', true);
-        addLWJGL(project, 'yoga', true);
 
         compile project(':UDAPI')
     }
@@ -187,7 +186,6 @@ project('MidiShapes2') {
         compile project(':UDAPI')
         compile project(':UDImpl')
         addLWJGL(project, 'tinyfd', true);
-        addLWJGL(project, 'openal', true);
     }
     apply plugin: 'com.github.johnrengelman.shadow'
     jar {

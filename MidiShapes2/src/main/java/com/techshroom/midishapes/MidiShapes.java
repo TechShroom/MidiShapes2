@@ -26,14 +26,23 @@ package com.techshroom.midishapes;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
+import com.techshroom.midishapes.MainModule.UnregisteredObjects;
 import com.techshroom.midishapes.view.MidiScreenView;
 import com.techshroom.unplanned.blitter.GraphicsContext;
 import com.techshroom.unplanned.window.Window;
+
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
 
 public class MidiShapes {
 
     public static void main(String[] args) {
         Injector inject = Guice.createInjector(new MainModule());
+
+        ObservableList<Object> unregistered = inject.getInstance(Key.get(new TypeLiteral<ObservableList<Object>>() {},
+                UnregisteredObjects.class));
 
         Window window = inject.getInstance(Window.class);
         GraphicsContext ctx = inject.getInstance(GraphicsContext.class);
@@ -43,6 +52,15 @@ public class MidiShapes {
         model.initialize();
         MidiScreenView screen = inject.getInstance(MidiScreenView.class);
         screen.initialize();
+
+        unregistered.forEach(window.getEventBus()::register);
+        unregistered.clear();
+        unregistered.addListener((ListChangeListener<Object>) c -> {
+            if (c.wasAdded()) {
+                c.getAddedSubList().forEach(window.getEventBus()::register);
+                c.getAddedSubList().clear();
+            }
+        });
 
         window.setVsyncOn(true);
         window.setVisible(true);
