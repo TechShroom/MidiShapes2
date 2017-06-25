@@ -30,7 +30,7 @@ import com.techshroom.midishapes.midi.event.MidiEvent;
 @AutoValue
 public abstract class SequenceNumberEvent implements MidiEvent {
 
-    public static SequenceNumberEvent create(int index, int tick, int channel, int seqNum) {
+    public static SequenceNumberEvent create(long index, int tick, int channel, int seqNum) {
         return new AutoValue_SequenceNumberEvent(index, tick, channel, seqNum);
     }
 

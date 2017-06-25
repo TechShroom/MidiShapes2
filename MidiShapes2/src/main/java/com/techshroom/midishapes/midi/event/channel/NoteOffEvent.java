@@ -29,7 +29,7 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class NoteOffEvent implements ChannelEvent {
 
-    public static NoteOffEvent create(int index, int tick, int channel, int note, int velocity) {
+    public static NoteOffEvent create(long index, int tick, int channel, int note, int velocity) {
         return new AutoValue_NoteOffEvent(index, tick, channel, note, velocity);
     }
 

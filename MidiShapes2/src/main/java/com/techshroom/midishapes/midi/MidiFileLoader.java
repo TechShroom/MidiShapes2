@@ -94,7 +94,7 @@ public class MidiFileLoader {
     private MidiTimeEncoding timeEncoding;
     private MidiType midiType;
     private int tracks;
-    private int index;
+    private long index;
 
     private MidiFileLoader(Path source) {
         this.source = source;
@@ -194,7 +194,7 @@ public class MidiFileLoader {
     private interface MidiEventConstructor {
 
         @Nullable
-        MidiEvent construct(int index, int tick, int activeChannel, int[] data) throws IOException;
+        MidiEvent construct(long index, int tick, int activeChannel, int[] data) throws IOException;
 
     }
 
@@ -234,7 +234,7 @@ public class MidiFileLoader {
     }
 
     @Nullable
-    private static MidiEvent controlChange(int index, int tick, int chan, int data1, int data2) {
+    private static MidiEvent controlChange(long index, int tick, int chan, int data1, int data2) {
         // I have no clue what * Mode Off is, they all cause AllNotesOffEvent
         // anyways...
         switch (data1) {
@@ -376,7 +376,7 @@ public class MidiFileLoader {
     }
 
     @Nullable
-    private MidiEvent metaEvent(int index, int tick, int channel, int id) throws IOException {
+    private MidiEvent metaEvent(long index, int tick, int channel, int id) throws IOException {
         switch (id) {
             case 0x00:
                 return SequenceNumberEvent.create(index, tick, channel, readShort("sequence number"));

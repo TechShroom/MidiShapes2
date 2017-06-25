@@ -30,7 +30,7 @@ import com.techshroom.midishapes.midi.event.MidiEvent;
 @AutoValue
 public abstract class EndOfTrackEvent implements MidiEvent {
 
-    public static EndOfTrackEvent create(int index, int tick, int channel) {
+    public static EndOfTrackEvent create(long index, int tick, int channel) {
         return new AutoValue_EndOfTrackEvent(index, tick, channel);
     }
 

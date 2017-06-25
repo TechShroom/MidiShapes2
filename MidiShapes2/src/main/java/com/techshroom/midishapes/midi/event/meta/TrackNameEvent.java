@@ -30,7 +30,7 @@ import com.techshroom.midishapes.midi.event.MidiEvent;
 @AutoValue
 public abstract class TrackNameEvent implements MidiEvent {
 
-    public static TrackNameEvent create(int index, int tick, int channel, String name) {
+    public static TrackNameEvent create(long index, int tick, int channel, String name) {
         return new AutoValue_TrackNameEvent(index, tick, channel, name);
     }
 

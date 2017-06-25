@@ -33,7 +33,7 @@ import com.techshroom.midishapes.midi.player.MidiPlayer;
 @AutoValue
 public abstract class StartEvent implements MidiEvent {
 
-    public static StartEvent create(int index, int tick, int channel, long millis) {
+    public static StartEvent create(long index, int tick, int channel, long millis) {
         return new AutoValue_StartEvent(index, tick, channel, millis);
     }
 

@@ -31,7 +31,7 @@ public interface MidiEvent {
     static Comparator<MidiEvent> ORDERING = (a, b) -> {
         int comp = Integer.compare(a.getTick(), b.getTick());
         if (comp == 0) {
-            comp = Integer.compare(a.getIndex(), b.getIndex());
+            comp = Long.compare(a.getIndex(), b.getIndex());
         }
         return comp;
     };
@@ -39,7 +39,7 @@ public interface MidiEvent {
     /**
      * Absolute position of this event. Helps maintain orderings.
      */
-    int getIndex();
+    long getIndex();
 
     /**
      * Absolute tick position of this event. Screw delta time.

@@ -33,7 +33,7 @@ public enum StopEvent implements MidiEvent {
     INSTANCE;
     
     @Override
-    public int getIndex() {
+    public long getIndex() {
         return Integer.MAX_VALUE;
     }
 

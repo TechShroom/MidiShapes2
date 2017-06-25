@@ -30,7 +30,7 @@ import com.techshroom.midishapes.midi.event.MidiEvent;
 @AutoValue
 public abstract class CopyrightNoticeEvent implements MidiEvent {
 
-    public static CopyrightNoticeEvent create(int index, int tick, int channel, String copyrightNotice) {
+    public static CopyrightNoticeEvent create(long index, int tick, int channel, String copyrightNotice) {
         return new AutoValue_CopyrightNoticeEvent(index, tick, channel, copyrightNotice);
     }
 

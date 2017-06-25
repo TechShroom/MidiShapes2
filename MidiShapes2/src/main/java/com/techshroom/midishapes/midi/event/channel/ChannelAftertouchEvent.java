@@ -29,7 +29,7 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class ChannelAftertouchEvent implements ChannelEvent {
 
-    public static ChannelAftertouchEvent create(int index, int tick, int channel, int value) {
+    public static ChannelAftertouchEvent create(long index, int tick, int channel, int value) {
         return new AutoValue_ChannelAftertouchEvent(index, tick, channel, value);
     }
 
