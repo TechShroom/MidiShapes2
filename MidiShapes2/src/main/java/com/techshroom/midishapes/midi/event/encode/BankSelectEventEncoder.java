@@ -26,31 +26,23 @@ package com.techshroom.midishapes.midi.event.encode;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.function.ToIntFunction;
 
-import com.techshroom.midishapes.midi.event.MidiEvent;
+import com.techshroom.midishapes.midi.event.channel.BankSelectEvent;
 
-interface Encoder<T extends MidiEvent> {
+final class BankSelectEventEncoder implements Encoder<BankSelectEvent> {
 
-    static <M extends MidiEvent> Encoder<M> twoByte(int type, ToIntFunction<M> first, ToIntFunction<M> second) {
-        return (event, stream) -> {
-            writeType(event, stream, type);
-            stream.writeByte(first.applyAsInt(event));
-            stream.writeByte(second.applyAsInt(event));
-        };
+    @Override
+    public void encode(BankSelectEvent event, DataOutputStream stream) throws IOException {
+        int bank = event.getBank();
+        // MSB
+        Encoder.writeType(event, stream, 0xB0);
+        stream.writeByte(0);
+        stream.writeByte((bank >> 8) & 0xFF);
+        
+        // LSB
+        Encoder.writeType(event, stream, 0xB0);
+        stream.writeByte(32);
+        stream.writeByte(bank & 0xFF);
     }
-
-    static <M extends MidiEvent> Encoder<M> oneByte(int type, ToIntFunction<M> first) {
-        return (event, stream) -> {
-            writeType(event, stream, type);
-            stream.writeByte(first.applyAsInt(event));
-        };
-    }
-    
-    static void writeType(MidiEvent event, DataOutputStream stream, int type) throws IOException {
-        stream.writeByte(type | event.getChannel());
-    }
-
-    void encode(T event, DataOutputStream stream) throws IOException;
 
 }

@@ -22,35 +22,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.techshroom.midishapes.midi.event.encode;
+package com.techshroom.midishapes.midi.event.channel;
 
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.util.function.ToIntFunction;
+import com.google.auto.value.AutoValue;
 
-import com.techshroom.midishapes.midi.event.MidiEvent;
+@AutoValue
+public abstract class BankSelectEvent implements ChannelEvent {
 
-interface Encoder<T extends MidiEvent> {
-
-    static <M extends MidiEvent> Encoder<M> twoByte(int type, ToIntFunction<M> first, ToIntFunction<M> second) {
-        return (event, stream) -> {
-            writeType(event, stream, type);
-            stream.writeByte(first.applyAsInt(event));
-            stream.writeByte(second.applyAsInt(event));
-        };
+    public static BankSelectEvent create(long index, int tick, int channel, int bank) {
+        return new AutoValue_BankSelectEvent(index, tick, channel, bank);
     }
 
-    static <M extends MidiEvent> Encoder<M> oneByte(int type, ToIntFunction<M> first) {
-        return (event, stream) -> {
-            writeType(event, stream, type);
-            stream.writeByte(first.applyAsInt(event));
-        };
-    }
-    
-    static void writeType(MidiEvent event, DataOutputStream stream, int type) throws IOException {
-        stream.writeByte(type | event.getChannel());
+    BankSelectEvent() {
     }
 
-    void encode(T event, DataOutputStream stream) throws IOException;
+    public abstract int getBank();
 
 }

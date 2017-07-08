@@ -39,6 +39,7 @@ import java.util.stream.Stream;
 import com.google.common.collect.ImmutableMap;
 import com.techshroom.midishapes.midi.event.MidiEvent;
 import com.techshroom.midishapes.midi.event.channel.AllNotesOffEvent;
+import com.techshroom.midishapes.midi.event.channel.BankSelectEvent;
 import com.techshroom.midishapes.midi.event.channel.ChannelAftertouchEvent;
 import com.techshroom.midishapes.midi.event.channel.ChannelEvent;
 import com.techshroom.midishapes.midi.event.channel.ControllerEvent;
@@ -73,6 +74,9 @@ public final class MidiEventEncoder {
         b.put(PitchBendEvent.class, Encoder.<PitchBendEvent> twoByte(0xE0,
                 e -> e.getPitch() & 0x7f,
                 e -> (e.getPitch() >> 7) & 0x7f));
+        
+        // Special encoders
+        b.put(BankSelectEvent.class, new BankSelectEventEncoder());
 
         encoders = b.build();
     }
@@ -118,6 +122,9 @@ public final class MidiEventEncoder {
         classes.addLast(c);
         while (!classes.isEmpty()) {
             Class<?> current = classes.removeFirst();
+            if (current == null) {
+                continue;
+            }
             Encoder<? extends MidiEvent> enc = encoders.get(current);
             if (enc != null) {
                 return enc;

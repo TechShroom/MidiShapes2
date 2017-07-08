@@ -67,6 +67,7 @@ final class JavaxSoundPlayer implements MidiSoundPlayer {
 
     private final Lock lock = new ReentrantLock();
     private final List<MidiDevice.Info> deviceInfos;
+    private Soundbank activeSoundbank;
     private MidiDevice.Info deviceInfo;
     private MidiEventEncoder enc;
     private MidiDevice device;
@@ -91,9 +92,32 @@ final class JavaxSoundPlayer implements MidiSoundPlayer {
                 if (open) {
                     close();
                 }
+
                 device = MidiSystem.getMidiDevice(info);
+
                 if (open) {
                     open();
+                }
+
+                if (device instanceof Synthesizer) {
+                    Synthesizer s = (Synthesizer) device;
+                    if (activeSoundbank != null) {
+                        if (!s.isOpen()) {
+                            s.open();
+                        }
+                        // we have pre-loaded a soundbank on another device
+                        s.unloadAllInstruments(s.getDefaultSoundbank());
+                        if (!s.loadAllInstruments(activeSoundbank)) {
+                            LOGGER.warn("Failed to load old soundbank on new device");
+                            // fall back to default
+                            activeSoundbank = null;
+                        }
+                    }
+                    if (activeSoundbank == null) {
+                        activeSoundbank = s.getDefaultSoundbank();
+                        s.unloadAllInstruments(activeSoundbank);
+                        s.loadAllInstruments(activeSoundbank);
+                    }
                 }
             } catch (MidiUnavailableException e) {
                 throw new RuntimeException(e);
@@ -124,9 +148,25 @@ final class JavaxSoundPlayer implements MidiSoundPlayer {
                 } catch (InvalidMidiDataException | IOException e) {
                     throw new IllegalStateException("failed to load SF2", e);
                 }
+                // open the device
+                if (!device.isOpen()) {
+                    try {
+                        device.open();
+                    } catch (MidiUnavailableException e) {
+                        throw new IllegalStateException("Failed to open device", e);
+                    }
+                }
                 if (s.isSoundbankSupported(sb)) {
-                    s.loadAllInstruments(sb);
-                    return;
+                    if (activeSoundbank != null) {
+                        s.unloadAllInstruments(activeSoundbank);
+                    }
+                    if (s.loadAllInstruments(sb)) {
+                        activeSoundbank = sb;
+                        LOGGER.info("Loaded {} as soundbank!", sf2File);
+                        return;
+                    }
+                    // fall back to old if not loaded
+                    s.loadAllInstruments(activeSoundbank);
                 }
             }
             LOGGER.warn("Ignoring soundbank " + sf2File + ", as it could not be loaded or used.");
