@@ -24,8 +24,6 @@
  */
 package com.techshroom.midishapes;
 
-import static org.lwjgl.util.tinyfd.TinyFileDialogs.tinyfd_openFileDialog;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -44,6 +42,7 @@ import com.techshroom.midishapes.midi.MidiFileLoader;
 import com.techshroom.midishapes.midi.player.MidiEventChain;
 import com.techshroom.midishapes.midi.player.MidiPlayer;
 import com.techshroom.midishapes.midi.player.MidiSoundPlayer;
+import com.techshroom.midishapes.util.CrossThreadFilePicker;
 import com.techshroom.unplanned.core.util.LifecycleObject;
 import com.techshroom.unplanned.event.keyboard.KeyState;
 import com.techshroom.unplanned.event.keyboard.KeyStateEvent;
@@ -58,13 +57,9 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleObjectProperty;
 
 public class MidiScreenModel implements LifecycleObject {
 
-    // trailing slash is IMPORTANT -- it opens it to the folder rather than the
-    // parent
-    private static String defaultOpenFolder = Paths.get(System.getProperty("user.home")).toAbsolutePath().toString() + "/Documents/misc_midi/";
     private static final PointerBuffer midiFileFilter = BufferUtils.createPointerBuffer(2);
     private static final PointerBuffer soundfontFileFilter = BufferUtils.createPointerBuffer(1);
     static {
@@ -79,7 +74,10 @@ public class MidiScreenModel implements LifecycleObject {
     private final MidiPlayer player;
     private final ObjectProperty<MidiSoundPlayer> soundPlayer;
     private final ObjectBinding<MidiEventChain> chain;
-    private volatile Path openFileTransfer;
+    private final CrossThreadFilePicker midiFilePicker = new CrossThreadFilePicker("Pick a MIDI file", midiFileFilter, "MIDI Files",
+            Paths.get(System.getProperty("user.home")).resolve("Documents/misc_midi"));
+    private final CrossThreadFilePicker sfFilePicker = new CrossThreadFilePicker("Pick a soundfont", soundfontFileFilter, "SF2 Files",
+            Paths.get(System.getProperty("user.home")).resolve("Documents"));
 
     @Inject
     MidiScreenModel(ExecutorService pool, Window window, MidiPlayer player,
@@ -100,29 +98,25 @@ public class MidiScreenModel implements LifecycleObject {
     }
 
     public void mainLoop() {
-        if (openFileTransfer != null) {
-            setOpenFile(openFileTransfer);
-            openFileTransfer = null;
-        }
+        midiFilePicker.transferIfNeeded();
+        sfFilePicker.transferIfNeeded();
     }
 
     // properties of the model
 
-    private final ObjectProperty<Path> openFileProperty = new SimpleObjectProperty<>(this, "openFile");
     private final ReadOnlyObjectWrapper<MidiFile> openMidiFileProperty = new ReadOnlyObjectWrapper<>(this, "openMidiFile");
     private final BooleanProperty loopingProperty = new SimpleBooleanProperty(this, "looping");
 
     {
-        openFileProperty.addListener(new InvalidationListener() {
+        midiFilePicker.currentValueProperty().addListener(new InvalidationListener() {
 
             @Override
             public void invalidated(Observable arg0) {
                 player.stop();
-                Path path = openFileProperty.get();
+                Path path = midiFilePicker.currentValueProperty().getValue();
                 if (path == null) {
                     return;
                 }
-                defaultOpenFolder = path.toString();
                 try {
                     openMidiFileProperty.set(MidiFileLoader.load(path));
                 } catch (IOException e) {
@@ -140,18 +134,6 @@ public class MidiScreenModel implements LifecycleObject {
         return loopingProperty;
     }
 
-    public ObjectProperty<Path> openFileProperty() {
-        return openFileProperty;
-    }
-
-    public Path getOpenFile() {
-        return openFileProperty.get();
-    }
-
-    public void setOpenFile(Path file) {
-        openFileProperty.set(file);
-    }
-
     public boolean isLooping() {
         return loopingProperty.get();
     }
@@ -163,12 +145,7 @@ public class MidiScreenModel implements LifecycleObject {
     @Subscribe
     public void onKey(KeyStateEvent event) {
         if (event.is(Key.O, KeyState.RELEASED)) {
-            pool.submit(() -> {
-                String file = tinyfd_openFileDialog("Pick a MIDI File", defaultOpenFolder, midiFileFilter, "MIDI Files", false);
-                if (file != null) {
-                    openFileTransfer = Paths.get(file);
-                }
-            });
+            pool.submit(midiFilePicker::showDialog);
         } else if (event.is(Key.L, KeyState.RELEASED)) {
             setLooping(!isLooping());
         } else if (event.is(Key.SPACE, KeyState.RELEASED)) {
@@ -181,10 +158,7 @@ public class MidiScreenModel implements LifecycleObject {
                 }
             }
         } else if (event.is(Key.S, KeyState.RELEASED)) {
-            String file = tinyfd_openFileDialog("Pick a Soundfont File", defaultOpenFolder, soundfontFileFilter, "Soundfonts (SF2)", false);
-            if (file != null) {
-                this.soundPlayer.get().setSoundsfont(Paths.get(file));
-            }
+            pool.submit(sfFilePicker::showDialog);
         } else if (event.is(Key.D, KeyState.RELEASED)) {
             this.soundPlayer.get().openSettingsPanel();
         } else if (event.is(Key.ESCAPE, KeyState.RELEASED)) {

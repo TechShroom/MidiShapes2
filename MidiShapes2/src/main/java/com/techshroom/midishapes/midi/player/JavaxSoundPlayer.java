@@ -138,16 +138,22 @@ final class JavaxSoundPlayer implements MidiSoundPlayer {
 
     @Override
     public void setSoundsfont(Path sf2File) {
+        Soundbank sb;
+        try {
+            sb = MidiSystem.getSoundbank(sf2File.toFile());
+        } catch (InvalidMidiDataException | IOException e) {
+            throw new IllegalStateException("failed to load SF2", e);
+        }
+        if (!loadSoundbank(sb)) {
+            LOGGER.warn("Ignoring soundbank " + sb.getName() + ", as it could not be loaded or used.");
+        }
+    }
+
+    private boolean loadSoundbank(Soundbank sb) {
         lock.lock();
         try {
             if (device instanceof Synthesizer) {
                 Synthesizer s = (Synthesizer) device;
-                Soundbank sb;
-                try {
-                    sb = MidiSystem.getSoundbank(sf2File.toFile());
-                } catch (InvalidMidiDataException | IOException e) {
-                    throw new IllegalStateException("failed to load SF2", e);
-                }
                 // open the device
                 if (!device.isOpen()) {
                     try {
@@ -158,21 +164,24 @@ final class JavaxSoundPlayer implements MidiSoundPlayer {
                 }
                 if (s.isSoundbankSupported(sb)) {
                     if (activeSoundbank != null) {
+                        if (activeSoundbank.equals(sb)) {
+                            return true;
+                        }
                         s.unloadAllInstruments(activeSoundbank);
                     }
                     if (s.loadAllInstruments(sb)) {
                         activeSoundbank = sb;
-                        LOGGER.info("Loaded {} as soundbank!", sf2File);
-                        return;
+                        LOGGER.info("Loaded {} as soundbank!", sb.getName());
+                        return true;
                     }
                     // fall back to old if not loaded
                     s.loadAllInstruments(activeSoundbank);
                 }
             }
-            LOGGER.warn("Ignoring soundbank " + sf2File + ", as it could not be loaded or used.");
         } finally {
             lock.unlock();
         }
+        return false;
     }
 
     @Override
@@ -183,6 +192,9 @@ final class JavaxSoundPlayer implements MidiSoundPlayer {
             target = device.getReceiver();
             checkNotNull(target, "no receiver opened!");
             enc = MidiEventEncoder.getInstance();
+            if (activeSoundbank != null) {
+                loadSoundbank(activeSoundbank);
+            }
         } catch (MidiUnavailableException e) {
             throw new RuntimeException(e);
         } finally {
