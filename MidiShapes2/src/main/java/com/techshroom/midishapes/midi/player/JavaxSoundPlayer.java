@@ -29,6 +29,9 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -75,7 +78,28 @@ final class JavaxSoundPlayer implements MidiSoundPlayer {
     private boolean open;
 
     private JavaxSoundPlayer() {
-        deviceInfos = ImmutableList.copyOf(MidiSystem.getMidiDeviceInfo());
+        List<MidiDevice.Info> infos = new ArrayList<>(Arrays.asList(MidiSystem.getMidiDeviceInfo()));
+        // TODO filtering or something for VirMIDI...
+        for (Iterator<MidiDevice.Info> iterator = infos.iterator(); iterator.hasNext();) {
+            MidiDevice.Info info = iterator.next();
+            MidiDevice dev;
+            try {
+                dev = MidiSystem.getMidiDevice(info);
+            } catch (MidiUnavailableException e) {
+                e.printStackTrace();
+                continue;
+            }
+            if (dev.getMaxReceivers() == 0) {
+                iterator.remove();
+                continue;
+            }
+            if (!info.getName().contains("hw:1,0")) {
+                iterator.remove();
+                continue;
+            }
+            System.err.println(info.getName());
+        }
+        deviceInfos = ImmutableList.copyOf(infos);
         checkState(deviceInfos.size() > 0, "there are no MIDI devices on this system");
         setDeviceInfo(deviceInfos.get(0));
     }
@@ -137,7 +161,7 @@ final class JavaxSoundPlayer implements MidiSoundPlayer {
     }
 
     @Override
-    public void setSoundsfont(Path sf2File) {
+    public void setSoundfont(Path sf2File) {
         Soundbank sb;
         try {
             sb = MidiSystem.getSoundbank(sf2File.toFile());

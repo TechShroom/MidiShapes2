@@ -113,7 +113,7 @@ public class MidiScreenModel implements LifecycleObject {
             @Override
             public void invalidated(Observable arg0) {
                 player.stop();
-                Path path = midiFilePicker.currentValueProperty().getValue();
+                Path path = midiFilePicker.getCurrentValue();
                 if (path == null) {
                     return;
                 }
@@ -121,6 +121,16 @@ public class MidiScreenModel implements LifecycleObject {
                     openMidiFileProperty.set(MidiFileLoader.load(path));
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
+                }
+            }
+        });
+        sfFilePicker.currentValueProperty().addListener(new InvalidationListener() {
+
+            @Override
+            public void invalidated(Observable arg0) {
+                Path value = sfFilePicker.getCurrentValue();
+                if (value != null) {
+                    soundPlayer.get().setSoundfont(value);
                 }
             }
         });

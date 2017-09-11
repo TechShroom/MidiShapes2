@@ -129,9 +129,13 @@ public class MidiPlayer {
                 }
                 if (next == null && looping) {
                     // play same file after 2 seconds
+                    MidiFile current = midiFile;
                     pool.schedule(() -> {
-                        if (midiFile != null) {
+                        if (midiFile == current) {
+                            LOGGER.info("[Looping] Running midiFile again...");
                             play(midiFile, chain);
+                        } else {
+                            LOGGER.info("[Looping] midiFile changed, not looping");
                         }
                     }, 2, TimeUnit.SECONDS);
                 }

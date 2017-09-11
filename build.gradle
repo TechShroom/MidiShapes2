@@ -148,6 +148,7 @@ subprojects {
 
 project('UDAPI') {
     dependencies {
+        compile group: 'net.java.dev.jna', name: 'jna', version: '4.4.0'
         addLWJGL(project, 'stb', true);
         addLWJGL(project, 'yoga', true);
     }

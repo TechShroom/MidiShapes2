@@ -43,7 +43,7 @@ public interface MidiSoundPlayer extends MidiEventChainLink, AutoCloseable {
      * @param sf2File
      *            the file to use as the soundfont
      */
-    void setSoundsfont(Path sf2File);
+    void setSoundfont(Path sf2File);
 
     MidiSoundPlayer open();
 
