@@ -57,6 +57,7 @@ subprojects {
         include '**/*.java'
         exclude '**/Sync.java'
         exclude '**/Color.java'
+        exclude '**/com/facebook/yoga/**'
         mapping {
             java = 'SLASHSTAR_STYLE'
         }
@@ -149,6 +150,7 @@ subprojects {
 project('UDAPI') {
     dependencies {
         compile group: 'net.java.dev.jna', name: 'jna', version: '4.4.0'
+        addLWJGL(project, '', true);
         addLWJGL(project, 'stb', true);
         addLWJGL(project, 'yoga', true);
     }
