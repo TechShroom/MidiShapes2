@@ -57,7 +57,6 @@ subprojects {
         include '**/*.java'
         exclude '**/Sync.java'
         exclude '**/Color.java'
-        exclude '**/com/facebook/yoga/**'
         mapping {
             java = 'SLASHSTAR_STYLE'
         }
@@ -85,7 +84,7 @@ subprojects {
          failOnVersionConflict()
 
          // force certain versions of dependencies (including transitive)
-        force 'com.google.guava:guava:21.0'
+        force 'com.google.guava:guava:23.0', 'com.google.code.findbugs:jsr305:3.0.1'
 
          cacheDynamicVersionsFor 10, 'minutes'
          // don't cache changing modules at all
@@ -152,7 +151,6 @@ project('UDAPI') {
         compile group: 'net.java.dev.jna', name: 'jna', version: '4.4.0'
         addLWJGL(project, '', true);
         addLWJGL(project, 'stb', true);
-        addLWJGL(project, 'yoga', true);
     }
 }
 
