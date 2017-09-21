@@ -146,42 +146,11 @@ subprojects {
     }
 }
 
-project('UDAPI') {
-    dependencies {
-        compile group: 'net.java.dev.jna', name: 'jna', version: '4.4.0'
-        addLWJGL(project, '', true);
-        addLWJGL(project, 'stb', true);
-    }
-}
-
-project('UDImpl') {
-    dependencies {
-        addLWJGL(project, '', true);
-        addLWJGL(project, 'opengl', true);
-        addLWJGL(project, 'openal', true);
-        addLWJGL(project, 'glfw', true);
-        addLWJGL(project, 'nanovg', true);
-        addLWJGL(project, 'stb', true);
-
-        compile project(':UDAPI')
-    }
-}
-project('UDExamples') {
-    dependencies {
-        compile project(':UDAPI')
-        runtime project(':UDImpl')
-    }
-    apply plugin: 'com.github.johnrengelman.shadow'
-    jar {
-        manifest {
-            attributes 'Main-Class': 'com.techshroom.unplanned.examples.ExamplePicker'
-        }
-    }
-}
 project('MidiShapes2') {
     dependencies {
-        compile project(':UDAPI')
-        compile project(':UDImpl')
+        // TODO release unplanned descent
+        // compile project(':UDAPI')
+        // compile project(':UDImpl')
         addLWJGL(project, 'tinyfd', true);
     }
     apply plugin: 'com.github.johnrengelman.shadow'

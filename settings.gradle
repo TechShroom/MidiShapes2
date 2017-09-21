@@ -1,1 +1,2 @@
-include 'UDAPI', 'UDImpl', 'UDExamples', 'MidiShapes2'
+rootProject.name = 'MidiShapes2'
+include 'MidiShapes2'

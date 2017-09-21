@@ -1,5 +1,5 @@
 /*
- * This file is part of UnplannedDescent, licensed under the MIT License (MIT).
+ * This file is part of MidiShapes2, licensed under the MIT License (MIT).
  *
  * Copyright (c) TechShroom Studios <https://techshroom.com>
  * Copyright (c) contributors
