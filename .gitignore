@@ -16,3 +16,4 @@ libs/
 # custom
 .build/
 *.log*
+*.sf2
