@@ -67,8 +67,8 @@ subprojects {
     }
 
     mavencfg {
-        coords 'TechShroom', 'UnplannedDescent'
-        description 'UnplannedDescent'
+        coords 'TechShroom', 'MidiShapes2'
+        description 'MidiShapes 2'
     }
 
     repositories {
