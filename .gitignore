@@ -12,6 +12,7 @@ bin/
 .gradle/
 build/
 libs/
+.includer.gradle
 
 # custom
 .build/

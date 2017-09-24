@@ -1,1 +1,5 @@
 rootProject.name = 'MidiShapes2'
+def includer = file('.includer.gradle')
+if (includer.exists()) {
+    apply from: includer
+}
