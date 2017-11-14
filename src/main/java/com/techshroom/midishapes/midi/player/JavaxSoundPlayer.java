@@ -80,6 +80,7 @@ final class JavaxSoundPlayer implements MidiSoundPlayer {
     private JavaxSoundPlayer() {
         List<MidiDevice.Info> infos = new ArrayList<>(Arrays.asList(MidiSystem.getMidiDeviceInfo()));
         // TODO filtering or something for VirMIDI...
+        boolean hasVirMidi = false;
         for (Iterator<MidiDevice.Info> iterator = infos.iterator(); iterator.hasNext();) {
             MidiDevice.Info info = iterator.next();
             MidiDevice dev;
@@ -90,12 +91,16 @@ final class JavaxSoundPlayer implements MidiSoundPlayer {
                 continue;
             }
             if (dev.getMaxReceivers() == 0) {
+                System.err.println("Skipping " + info.getName() + ": no receivers");
                 iterator.remove();
                 continue;
             }
-            if (!info.getName().contains("hw:1,0")) {
-                iterator.remove();
-                continue;
+            if (info.getName().contains("VirMIDI")) {
+                if (hasVirMidi) {
+                    iterator.remove();
+                    continue;
+                }
+                hasVirMidi = true;
             }
             System.err.println(info.getName());
         }
