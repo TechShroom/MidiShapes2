@@ -78,31 +78,32 @@ final class JavaxSoundPlayer implements MidiSoundPlayer {
     private boolean open;
 
     private JavaxSoundPlayer() {
+        LOGGER.info("Loading MIDI info...");
         List<MidiDevice.Info> infos = new ArrayList<>(Arrays.asList(MidiSystem.getMidiDeviceInfo()));
-        // TODO filtering or something for VirMIDI...
         boolean hasVirMidi = false;
         for (Iterator<MidiDevice.Info> iterator = infos.iterator(); iterator.hasNext();) {
             MidiDevice.Info info = iterator.next();
             MidiDevice dev;
-            try {
-                dev = MidiSystem.getMidiDevice(info);
-            } catch (MidiUnavailableException e) {
-                e.printStackTrace();
-                continue;
-            }
-            if (dev.getMaxReceivers() == 0) {
-                System.err.println("Skipping " + info.getName() + ": no receivers");
-                iterator.remove();
-                continue;
-            }
-            if (info.getName().contains("VirMIDI")) {
-                if (hasVirMidi) {
+            if (!hasVirMidi) {
+                try {
+                    dev = MidiSystem.getMidiDevice(info);
+                } catch (MidiUnavailableException e) {
+                    e.printStackTrace();
+                    continue;
+                }
+                if (dev.getMaxReceivers() == 0) {
+                    LOGGER.info("Skipping " + info.getName() + ": no receivers");
                     iterator.remove();
                     continue;
                 }
-                hasVirMidi = true;
+                if (info.getName().contains("VirMIDI")) {
+                    hasVirMidi = true;
+                }
+            } else if (info.getName().contains("VirMIDI")) {
+                iterator.remove();
+                continue;
             }
-            System.err.println(info.getName());
+            LOGGER.debug(info.getName());
         }
         deviceInfos = ImmutableList.copyOf(infos);
         checkState(deviceInfos.size() > 0, "there are no MIDI devices on this system");

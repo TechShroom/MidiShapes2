@@ -45,7 +45,11 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 import javax.annotation.Nullable;
@@ -106,7 +110,14 @@ public class MidiFileLoader {
         return (((long) track) << 32) | localIndex;
     }
 
-    private final ListeningExecutorService loaderThreads = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool(
+    private static ExecutorService quickLoader(ThreadFactory threadFactory) {
+        return new ThreadPoolExecutor(
+                0, Runtime.getRuntime().availableProcessors(),
+                5, TimeUnit.SECONDS,
+                new SynchronousQueue<>(), threadFactory);
+    }
+
+    private final ListeningExecutorService loaderThreads = MoreExecutors.listeningDecorator(quickLoader(
             new ThreadFactoryBuilder().setDaemon(true).setNameFormat("midifileloader-%d").build()));
     private final Path source;
     private final ThreadLocal<Deque<InputStream>> inputs = ThreadLocal.withInitial(LinkedList::new);
@@ -175,14 +186,13 @@ public class MidiFileLoader {
 
         checkState(tracks.size() == this.tracks, "loaded wrong number of tracks, somehow?");
         // scan for channels in parallel
-        ImmutableSet<Integer> channels = tracks.stream()
+        ImmutableSet<Integer> channels = tracks.parallelStream()
                 .flatMap(mt -> mt.getEvents().stream())
                 // only note channels that are going to be played on
                 .filter(NoteOnEvent.class::isInstance)
                 .mapToInt(MidiEvent::getChannel)
                 .distinct()
                 .boxed()
-                .parallel()
                 .collect(toImmutableSet());
         return MidiFile.of(source, midiType, channels, tracks, MidiTiming.calculate(timeEncoding, tracks));
     }

@@ -27,6 +27,7 @@ package com.techshroom.midishapes.midi;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.concurrent.TimeUnit;
 import java.util.function.ObjIntConsumer;
 import java.util.stream.Collectors;
@@ -37,6 +38,8 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ImmutableRangeMap;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
+import com.techshroom.midishapes.midi.event.MidiEvent;
+import com.techshroom.midishapes.midi.event.channel.NoteOnEvent;
 import com.techshroom.midishapes.midi.event.meta.SetTempoEvent;
 
 /**
@@ -95,7 +98,19 @@ public class MidiTiming {
         // add final entry
         addTC.accept(prev, Integer.MAX_VALUE);
 
-        return new MidiTiming(tempoCalculators.build(), timeEncoding);
+        return new MidiTiming(tempoCalculators.build(), timeEncoding, getOffset(tracks));
+    }
+
+    private static int getOffset(List<MidiTrack> list) {
+        return list.parallelStream()
+                .map(tr -> tr.getEvents().stream()
+                        .filter(NoteOnEvent.class::isInstance)
+                        .mapToInt(MidiEvent::getTick)
+                        .filter(t -> t > 0)
+                        .min())
+                .filter(OptionalInt::isPresent)
+                .mapToInt(OptionalInt::getAsInt)
+                .min().orElse(0);
     }
 
     private static final class TickOffsetTempoCalculator {
@@ -120,10 +135,12 @@ public class MidiTiming {
 
     private final RangeMap<Integer, TickOffsetTempoCalculator> tickCalc;
     private final MidiTimeEncoding encoding;
+    private final int offsetTicks;
 
-    private MidiTiming(RangeMap<Integer, TickOffsetTempoCalculator> tempoCalculators, MidiTimeEncoding encoding) {
+    private MidiTiming(RangeMap<Integer, TickOffsetTempoCalculator> tempoCalculators, MidiTimeEncoding encoding, int offsetTicks) {
         this.tickCalc = tempoCalculators;
         this.encoding = encoding;
+        this.offsetTicks = offsetTicks;
     }
 
     public MidiTimeEncoding getEncoding() {
@@ -142,6 +159,10 @@ public class MidiTiming {
             return 0;
         }
         return TimeUnit.MICROSECONDS.toMillis(tickCalc.get(tick).getMicrosecondOffset(tick));
+    }
+    
+    public int getOffsetTicks() {
+        return offsetTicks;
     }
 
 }

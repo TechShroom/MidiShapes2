@@ -26,7 +26,6 @@ package com.techshroom.midishapes.midi;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableListMultimap.toImmutableListMultimap;
-import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 import java.nio.file.Path;
 import java.util.Collection;
@@ -37,6 +36,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedSet;
 import com.techshroom.midishapes.midi.event.MidiEvent;
 
 @AutoValue
@@ -52,7 +52,7 @@ public abstract class MidiFile {
                 checkState(tracks.size() > 0, "%s requires at least 1 track", type);
                 break;
         }
-        ImmutableSet<Integer> sortedChannels = channels.stream().sorted().collect(toImmutableSet());
+        ImmutableSet<Integer> sortedChannels = ImmutableSortedSet.copyOf(channels);
         ImmutableList<MidiTrack> tracksCopy = ImmutableList.copyOf(tracks);
         return new AutoValue_MidiFile(path, type, sortedChannels, tracksCopy, buildCT(tracksCopy), timing);
     }

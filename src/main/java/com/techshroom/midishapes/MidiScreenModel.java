@@ -167,9 +167,9 @@ public class MidiScreenModel implements LifecycleObject {
                     this.player.play(file, chain.get());
                 }
             }
-        } else if (event.is(Key.S, KeyState.RELEASED)) {
+        } else if (event.is(Key.J, KeyState.RELEASED)) {
             pool.submit(sfFilePicker::showDialog);
-        } else if (event.is(Key.D, KeyState.RELEASED)) {
+        } else if (event.is(Key.H, KeyState.RELEASED)) {
             this.soundPlayer.get().openSettingsPanel();
         } else if (event.is(Key.ESCAPE, KeyState.RELEASED)) {
             window.setCloseRequested(true);

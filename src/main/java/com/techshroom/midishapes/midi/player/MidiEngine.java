@@ -40,6 +40,7 @@ import com.techshroom.midishapes.midi.MidiTiming;
 import com.techshroom.midishapes.midi.event.MidiEvent;
 import com.techshroom.midishapes.midi.event.StartEvent;
 import com.techshroom.midishapes.midi.event.StopEvent;
+import com.techshroom.unplanned.core.util.time.Timer;
 
 class MidiEngine implements Runnable {
 
@@ -161,7 +162,8 @@ class MidiEngine implements Runnable {
         final MidiTiming timing = this.timing.get();
         final MidiEventChain chain = this.chain.get();
         // add extra wait before actual start
-        final long startMillis = this.startMillis = getCurrentMillis() + 200;
+        long offsetMillis = 200 - timing.getMillisecondOffset(timing.getOffsetTicks());
+        final long startMillis = this.startMillis = getCurrentMillis() + offsetMillis;
         try {
             chain.sendEventToNext(StartEvent.create(Integer.MIN_VALUE, 0, 0, startMillis));
             while (stream.hasNext()) {
@@ -185,7 +187,7 @@ class MidiEngine implements Runnable {
     }
 
     public long getCurrentMillis() {
-        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+        return Timer.getInstance().getValue(TimeUnit.MILLISECONDS);
     }
 
     private void waitForEvent(int tick, MidiTiming timing, long startMillis) {
