@@ -106,7 +106,7 @@ public class MidiTiming {
                 .map(tr -> tr.getEvents().stream()
                         .filter(NoteOnEvent.class::isInstance)
                         .mapToInt(MidiEvent::getTick)
-                        .filter(t -> t > 0)
+                        .filter(t -> t >= 0)
                         .min())
                 .filter(OptionalInt::isPresent)
                 .mapToInt(OptionalInt::getAsInt)

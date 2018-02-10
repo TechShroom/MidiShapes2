@@ -345,7 +345,7 @@ final class ChannelView implements Drawable, LifecycleObject, MidiEventChainLink
                 }
                 offset = (float) (qptRatio * currentTick);
             } else {
-                offset = 0;
+                offset = (float) (qptRatio * src.getTimingData().getOffsetTicks());
             }
 
             notesLock.lock();

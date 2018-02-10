@@ -31,6 +31,7 @@ import com.google.inject.TypeLiteral;
 import com.techshroom.midishapes.MainModule.UnregisteredObjects;
 import com.techshroom.midishapes.view.MidiScreenView;
 import com.techshroom.unplanned.blitter.GraphicsContext;
+import com.techshroom.unplanned.core.util.Sync;
 import com.techshroom.unplanned.window.Window;
 
 import javafx.collections.ListChangeListener;
@@ -65,7 +66,10 @@ public class MidiShapes {
         window.setVsyncOn(true);
         window.setVisible(true);
 
+        Sync sync = new Sync();
+
         while (!window.isCloseRequested()) {
+            sync.sync(60);
             window.processEvents();
             ctx.clearGraphicsState();
 

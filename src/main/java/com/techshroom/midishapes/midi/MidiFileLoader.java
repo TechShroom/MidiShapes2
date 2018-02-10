@@ -112,7 +112,7 @@ public class MidiFileLoader {
 
     private static ExecutorService quickLoader(ThreadFactory threadFactory) {
         return new ThreadPoolExecutor(
-                0, Runtime.getRuntime().availableProcessors(),
+                0, Integer.MAX_VALUE,
                 5, TimeUnit.SECONDS,
                 new SynchronousQueue<>(), threadFactory);
     }

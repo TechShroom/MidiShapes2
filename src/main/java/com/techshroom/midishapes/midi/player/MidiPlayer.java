@@ -66,7 +66,7 @@ public class MidiPlayer {
     public MidiEventChainBuilder chainBuilder() {
         return new MidiEventChainBuilder(this);
     }
-    
+
     public void setLooping(boolean looping) {
         LOGGER.debug("Looping = {}", looping);
         this.looping = looping;
