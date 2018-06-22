@@ -164,14 +164,18 @@ class MidiEngine implements Runnable {
         // add extra wait before actual start
         long offsetMillis = 200 - timing.getMillisecondOffset(timing.getOffsetTicks());
         final long startMillis = this.startMillis = getCurrentMillis() + offsetMillis;
+        int lastEventTick = timing.getOffsetTicks();
+        long lastEventCompleteMillis = startMillis;
         try {
             chain.sendEventToNext(StartEvent.create(Integer.MIN_VALUE, 0, 0, startMillis));
             while (stream.hasNext()) {
                 checkIfShouldReturn();
                 MidiEvent next = stream.next();
-                waitForEvent(next.getTick(), timing, startMillis);
+                waitForEvent(lastEventTick, next.getTick() - lastEventTick, timing, lastEventCompleteMillis);
                 checkIfShouldReturn();
                 chain.sendEventToNext(next);
+                lastEventTick = next.getTick();
+                lastEventCompleteMillis = getCurrentMillis();
             }
 
             // wait for a second before closing, in case there is any echo, etc.
@@ -190,13 +194,16 @@ class MidiEngine implements Runnable {
         return Timer.getInstance().getValue(TimeUnit.MILLISECONDS);
     }
 
-    private void waitForEvent(int tick, MidiTiming timing, long startMillis) {
-        long eventMillis = timing.getMillisecondOffset(tick) + startMillis;
+    private void waitForEvent(int tickBase, int tickDelta, MidiTiming timing, long lastMillis) {
+        long lastMillisEstimate = timing.getMillisecondOffset(tickBase);
+        long nextMillisEstimate = timing.getMillisecondOffset(tickBase + tickDelta);
+        long realDelay = nextMillisEstimate - lastMillisEstimate;
+        long eventMillis = lastMillis + realDelay;
         long millisDiff = eventMillis - getCurrentMillis();
         if (millisDiff > 0) {
             // wait, then churn to be accurate
             try {
-                Thread.sleep(millisDiff);
+                Thread.sleep(Math.max(millisDiff - 5, 0));
             } catch (InterruptedException e) {
                 throw EarlyReturnError.getInstance();
             }

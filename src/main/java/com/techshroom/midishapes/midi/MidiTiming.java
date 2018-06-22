@@ -35,6 +35,9 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableRangeMap;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
@@ -136,11 +139,18 @@ public class MidiTiming {
     private final RangeMap<Integer, TickOffsetTempoCalculator> tickCalc;
     private final MidiTimeEncoding encoding;
     private final int offsetTicks;
+    private final LoadingCache<Integer, Long> offsetCache;
 
     private MidiTiming(RangeMap<Integer, TickOffsetTempoCalculator> tempoCalculators, MidiTimeEncoding encoding, int offsetTicks) {
         this.tickCalc = tempoCalculators;
         this.encoding = encoding;
         this.offsetTicks = offsetTicks;
+        this.offsetCache = CacheBuilder.newBuilder()
+                .initialCapacity(50)
+                .maximumSize(50)
+                .build(CacheLoader.from(tick -> {
+                    return TimeUnit.MICROSECONDS.toMillis(tickCalc.get(tick).getMicrosecondOffset(tick));
+                }));
     }
 
     public MidiTimeEncoding getEncoding() {
@@ -158,9 +168,9 @@ public class MidiTiming {
         if (tick == 0) {
             return 0;
         }
-        return TimeUnit.MICROSECONDS.toMillis(tickCalc.get(tick).getMicrosecondOffset(tick));
+        return offsetCache.getUnchecked(tick);
     }
-    
+
     public int getOffsetTicks() {
         return offsetTicks;
     }
