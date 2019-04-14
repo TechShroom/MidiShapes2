@@ -1,10 +1,8 @@
-import com.techshroom.inciseblue.commonLib
-
 plugins {
     java
     id("net.researchgate.release") version "2.8.0"
     id("com.techshroom.incise-blue") version "0.3.10"
-    id("com.github.johnrengelman.plugin-shadow") version "2.0.3"
+    id("com.github.johnrengelman.shadow") version "4.0.4"
     id("org.openjfx.javafxplugin") version "0.0.7"
     idea
 }
